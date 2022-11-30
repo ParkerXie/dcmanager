@@ -6,7 +6,7 @@ Official dc node service for running dc protocol.
 
 - Hardware requirements:
 
-  CPU must contain **SGX module**, and make sure the SGX function is turned on in the bios, please click [this page](https://github.com/dcnetio/dc/wiki/Check-TEE-supportive) to check if your machine supports SGX
+  CPU must contain **SGX module**, and make sure the SGX function is turned on in the bios, please click [this page](https://github.com/dcnetio/dcmanager/wiki/Check-TEE-supportive) to check if your machine supports SGX
 
 - Operating system requirements:
 
