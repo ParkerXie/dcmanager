@@ -42,7 +42,7 @@ done
 
 
 if [ $(id -u) -ne 0 ]; then
-    echo -e "Please run with sudo!" && exit ${NC}
+    echo -e ${RED} "Please run with sudo!" ${NC} && exit 
 fi
 BEGINTIME=$(date "+%Y-%m-%d %H:%M:%S")
 echo $BEGINTIME '>>  start dc  node install...'

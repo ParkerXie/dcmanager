@@ -47,34 +47,34 @@ function install_base_depenencies(){
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.4.   sudo apt-get update' ${NC}
     sudo apt-get update || 
     if [ $? -ne 0 ]; then
-        echo -e "${RED}1.4.   sudo apt-get update failed${NC}" && exit ${NC}
+        echo -e ${RED} "1.4.   sudo apt-get update failed" ${NC} ${NC} && exit 
     fi
     ## 1.5 upgrade apt-get
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.5.   sudo apt-get upgrade' ${NC}
     sudo apt-get upgrade -y 
     if [ $? -ne 0 ]; then
-        echo -e "${RED}1.5.   sudo apt-get upgrade failed${NC}" && exit ${NC}
+        echo -e ${RED} "1.5.   sudo apt-get upgrade failed" ${NC} ${NC} && exit 
     fi
 
     ## 1.6 install build-essential 
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.6.   sudo apt install build-essential' ${NC}
     sudo apt-get -y install  build-essential 
     if [ $? -ne 0 ]; then
-        echo -e "${RED}1.6.   sudo apt install build-essential failed${NC}" && exit ${NC}
+        echo -e ${RED} "1.6.   sudo apt install build-essential failed" ${NC} ${NC} && exit 
     fi
 
     ## 1.7 install libssl-dev 
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.7.   sudo apt install  libssl-dev' ${NC}
     sudo apt-get -y install   libssl-dev  
     if [ $? -ne 0 ]; then
-        echo -e "${RED}1.7.   sudo apt install  libssl-dev failed${NC}" && exit ${NC}
+        echo -e ${RED} "1.7.   sudo apt install  libssl-dev failed" ${NC} ${NC} && exit 
     fi
 
     ## 1.8 install dkms
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.8.   sudo apt install  dkms' ${NC}
     sudo apt-get  -y install dkms 
     if [ $? -ne 0 ]; then
-        echo -e "${RED}1.8.   sudo apt install  dkms failed${NC}" && exit ${NC}
+        echo -e ${RED} "1.8.   sudo apt install  dkms failed" ${NC} ${NC} && exit 
     fi
 
     ## 1.9 install git 
@@ -93,13 +93,13 @@ function install_sgx_env(){
         fi
         result=$(echo '381c32da43ad500bac104601341c8f53f63e4e6f507259b463fa920b3e67bc4f sgx_linux_x64_driver_1.41.bin' | sha256sum -c | grep 'OK')
         if [[ $result = "" ]]; then 
-        echo -e "${RED}2.0. sgx_linux_x64_driver_1.41.bin checksum failed${NC}" && exit  ${NC}
+        echo -e ${RED} "2.0. sgx_linux_x64_driver_1.41.bin checksum failed" ${NC} && exit  ${NC}
         exit 
         fi
         chmod +x sgx_linux_x64_driver_1.41.bin
         sudo ./sgx_linux_x64_driver_1.41.bin
         if [ $? -ne 0 ]; then
-            echo -e "${RED}2.0  install sgx_linux_x64_driver_1.41.bin failed${NC}" && exit ${NC}
+            echo -e ${RED} "2.0  install sgx_linux_x64_driver_1.41.bin failed" ${NC} ${NC} && exit 
         fi
     else
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.0  ******* sgx_driver aleady installed ********' ${NC}
@@ -113,19 +113,19 @@ function install_sgx_env(){
     fi
     result=$(echo '809cb39c4089843f923143834550b185f2e6aa91373a05c8ec44026532dab37c intel-sgx-deb.key' | sha256sum -c | grep 'OK')
     if [[ $result = "" ]]; then 
-    echo -e "${RED}2.1. intel-sgx-deb.key checksum failed${NC}" && exit  ${NC}
+    echo -e ${RED} "2.1. intel-sgx-deb.key checksum failed" ${NC} && exit  ${NC}
     fi
     sudo apt-key add intel-sgx-deb.key
     echo 'deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main' | sudo tee /etc/apt/sources.list.d/intel-sgx.list
     sudo apt-get update -y 
     if [ $? -ne 0 ]; then
-        echo -e "${RED}apt-get update failed${NC}" && exit ${NC}
+        echo -e ${RED} "apt-get update failed" ${NC} ${NC} && exit 
     fi
     ## 2.2 libsgx-dcap-default-qpl 安装
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.2   download and  install libsgx-dcap-default-qpl' ${NC}
     sudo apt-get install libsgx-dcap-default-qpl 
     if [ $? -ne 0 ]; then
-        echo -e "${RED}2.2   download and  install libsgx-dcap-default-qpl failed${NC}" && exit ${NC}
+        echo -e ${RED} "2.2   download and  install libsgx-dcap-default-qpl failed" ${NC} ${NC} && exit 
     fi
     FILE=/usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so
     if [[  -f "$FILE" ]]; then
@@ -133,7 +133,7 @@ function install_sgx_env(){
     fi
     sudo ln -s /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so.1 /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so
     if [ $? -ne 0 ]; then
-        echo -e "${RED}2.2 create soft link for /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so  failed: $? ${NC}" && exit ${NC}
+        echo -e ${RED} "2.2 create soft link for /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so  failed: $? " ${NC} ${NC} && exit 
         exit
     fi
 
@@ -146,19 +146,19 @@ function install_sgx_env(){
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.4   download and  install libsgx-enclave-common' ${NC}
     sudo apt-get -y install  --no-install-recommends libsgx-enclave-common 
     if [ $? -ne 0 ]; then
-        echo -e "${RED}2.4   download and  install libsgx-enclave-common failed${NC}" && exit ${NC}
+        echo -e ${RED} "2.4   download and  install libsgx-enclave-common failed" ${NC} ${NC} && exit 
     fi
     ## 2.5 libsgx-dcap-default-qpl 安装
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.5   download and  install libsgx-quote-ex' ${NC}
     sudo apt-get -y install libsgx-quote-ex 
     if [ $? -ne 0 ]; then
-        echo -e "${RED}2.5   download and  install libsgx-quote-ex failed${NC}" && exit ${NC}
+        echo -e ${RED} "2.5   download and  install libsgx-quote-ex failed" ${NC} ${NC} && exit 
     fi
     ## 2.6 检查sgx相关驱动与软件是否安装成功
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.6   check if sgx env init success' ${NC}
     /sbin/modprobe intel_sgx
     if [ $? -ne 0 ]; then
-        echo -e "${RED}2.6   modprobe intel_sgx failed${NC}" && exit ${NC}
+        echo -e ${RED} "2.6   modprobe intel_sgx failed" ${NC} ${NC} && exit 
     fi
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.6   sgx env init success' ${NC}
 }
@@ -241,28 +241,28 @@ function install_docker_images(){
     echo
     docker pull ghcr.io/dcnetio/pccs:latest
     if [ $? -ne 0 ]; then
-        echo -e "${RED}4.0   pull image from ghcr.io/dcnetio/pccs failed${NC}" && exit ${NC}
+        echo -e ${RED} "4.0   pull image from ghcr.io/dcnetio/pccs failed" ${NC} ${NC} && exit
     fi
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.1   pull image from ghcr.io/dcnetio/dcchain' ${NC}
     echo
     docker pull ghcr.io/dcnetio/dcchain:0.0.1
     if [ $? -ne 0 ]; then
-        echo -e "${RED}4.1   pull image from ghcr.io/dcnetio/dcchain failed${NC}" && exit ${NC}
+        echo -e ${RED} "4.1   pull image from ghcr.io/dcnetio/dcchain failed" ${NC} ${NC} && exit 
     fi
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.2   pull image from ghcr.io/dcnetio/dcupdate' ${NC}
     echo
     docker pull ghcr.io/dcnetio/dcupgrade:latest
     if [ $? -ne 0 ]; then
-        echo -e "${RED}4.2   pull image from ghcr.io/dcnetio/dcupdate failed${NC}" && exit ${NC}
+        echo -e ${RED} "4.2   pull image from ghcr.io/dcnetio/dcupdate failed" ${NC} ${NC} && exit 
     fi
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.3   pull image from ghcr.io/dcnetio/dcnode' ${NC}
     echo
     docker pull ghcr.io/dcnetio/dcnode:0.0.1
     if [ $? -ne 0 ]; then
-        echo -e "${RED}4.3   pull image from ghcr.io/dcnetio/dcnode failed${NC}" && exit ${NC}
+        echo -e ${RED} "4.3   pull image from ghcr.io/dcnetio/dcnode failed" ${NC} ${NC} && exit 
     fi
     echo
 
@@ -275,28 +275,28 @@ function install_docker_images_cn(){
     echo
     docker pull ghcr.nju.edu.cn/dcnetio/pccs:latest
     if [ $? -ne 0 ]; then
-        echo -e "${RED}4.0   pull image from ghcr.nju.edu.cn/dcnetio/pccs failed${NC}" && exit ${NC}
+        echo -e ${RED} "4.0   pull image from ghcr.nju.edu.cn/dcnetio/pccs failed" ${NC} ${NC} && exit 
     fi
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.1   pull image from ghcr.nju.edu.cn/dcnetio/dcchain' ${NC}
     echo
     docker pull ghcr.nju.edu.cn/dcnetio/dcchain:0.0.1
     if [ $? -ne 0 ]; then
-        echo -e "${RED}4.1   pull image from ghcr.nju.edu.cn/dcnetio/dcchain failed${NC}" && exit ${NC}
+        echo -e ${RED} "4.1   pull image from ghcr.nju.edu.cn/dcnetio/dcchain failed" ${NC} ${NC} && exit 
     fi
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.2   pull image from ghcr.nju.edu.cn/dcnetio/dcupdate' ${NC}
     echo
     docker pull ghcr.nju.edu.cn/dcnetio/dcupgrade:latest
     if [ $? -ne 0 ]; then
-        echo -e "${RED}4.2   pull image from ghcr.nju.edu.cn/dcnetio/dcupdate failed${NC}" && exit ${NC}
+        echo -e ${RED} "4.2   pull image from ghcr.nju.edu.cn/dcnetio/dcupdate failed" ${NC} ${NC} && exit 
     fi
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.3   pull image from ghcr.nju.edu.cn/dcnetio/dcnode' ${NC}
     echo
     docker pull ghcr.nju.edu.cn/dcnetio/dcnode:0.0.1
     if [ $? -ne 0 ]; then
-        echo -e "${RED}4.3   pull image from ghcr.nju.edu.cn/dcnetio/dcnode failed${NC}" && exit ${NC}
+        echo -e ${RED} "4.3   pull image from ghcr.nju.edu.cn/dcnetio/dcnode failed" ${NC} ${NC} && exit 
     fi
     echo
 
