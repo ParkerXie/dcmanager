@@ -1,0 +1,9 @@
+chainNodeName: 
+validatorFlag: true
+chainWsUrl: ws://beiniao.ddns.net:9944
+chainRpcListenPort: 9933
+pccsKey: 07ca6580ba9249569b15b1f7b1a34273
+chainImage: ghcr.io/dcnetio/dcchain:latest
+nodeImage: ghcr.io/dcnetio/dcnode:latest
+upgradeImage: ghcr.io/dcnetio/dcupgrade:latest
+pccsImage: ghcr.io/dcnetio/pccs:latest
