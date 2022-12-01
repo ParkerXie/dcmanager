@@ -21,6 +21,6 @@ jobs:
       with:
         go-version: 1.18
     - name: Build
-      run: go build -v ./dc -o ./install/bin
+      run: go build -o ./install/bin -v ./dc 
 
 
