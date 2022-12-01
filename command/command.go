@@ -23,7 +23,7 @@ import (
 	"github.com/dcnetio/dc/blockchain"
 	"github.com/dcnetio/dc/config"
 	"github.com/dcnetio/dc/util"
-	"github.com/dcnetio/go-dcnode/gothreads-compatible/core/thread"
+	"github.com/dcnetio/gothreads-lib/core/thread"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"

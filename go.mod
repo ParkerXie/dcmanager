@@ -6,16 +6,17 @@ require (
 	github.com/ChainSafe/go-schnorrkel v1.0.0
 	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.8
 	github.com/cosmos/go-bip39 v1.0.0
+	github.com/dcnetio/gothreads-lib v0.0.0-20221201025749-3be56d69e7ad
 	github.com/gogo/protobuf v1.3.2
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hsanjuan/ipfs-lite v1.4.2
 	github.com/ipfs/go-cid v0.3.2
 	github.com/ipfs/go-ipld-format v0.4.0
 	github.com/ipfs/go-log/v2 v2.5.1
-	github.com/ipfs/go-merkledag v0.8.0
-	github.com/libp2p/go-libp2p v0.23.2
+	github.com/ipfs/go-merkledag v0.8.1
+	github.com/libp2p/go-libp2p v0.23.4
 	github.com/libp2p/go-libp2p-core v0.20.1
-	github.com/multiformats/go-multiaddr v0.7.0
+	github.com/multiformats/go-multiaddr v0.8.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -62,7 +63,7 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/multiformats/go-multibase v0.1.1 // indirect
 	github.com/multiformats/go-multihash v0.2.1 // indirect
-	github.com/multiformats/go-varint v0.0.6 // indirect
+	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -76,11 +77,11 @@ require (
 	github.com/whyrusleeping/cbor-gen v0.0.0-20210713220151-be142a5ae1a8 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
-	golang.org/x/exp v0.0.0-20220916125017-b168a2c6b86b // indirect
-	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/tools v0.1.12 // indirect
+	golang.org/x/exp v0.0.0-20221126150942-6ab00d035af9 // indirect
+	golang.org/x/mod v0.6.0 // indirect
+	golang.org/x/tools v0.2.0 // indirect
 	google.golang.org/genproto v0.0.0-20210909211513-a8c4777a87af // indirect
-	google.golang.org/grpc v1.50.1 // indirect
+	google.golang.org/grpc v1.51.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gotest.tools/v3 v3.4.0 // indirect
 	lukechampine.com/blake3 v1.1.7 // indirect
@@ -168,9 +169,9 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
-	golang.org/x/net v0.0.0-20220920183852-bf014ff85ad5 // indirect
-	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
+	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/net v0.1.0 // indirect
+	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
@@ -180,7 +181,6 @@ require (
 	github.com/bigkevmcd/go-configparser v0.0.0-20221013105652-718c0b41a604
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dariubs/percent v1.0.0
-	github.com/dcnetio/go-dcnode v0.0.1
 	github.com/docker/docker v20.10.21+incompatible
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -194,8 +194,6 @@ require (
 	github.com/libp2p/go-libp2p-kad-dht v0.18.0 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/textileio/crypto v0.0.0-20210929130053-08edebc3361a
-	go.uber.org/zap v1.23.0 // indirect
-	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
+	go.uber.org/zap v1.24.0 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 )
-
-replace github.com/dcnetio/go-dcnode v0.0.1 => ../dcnode
