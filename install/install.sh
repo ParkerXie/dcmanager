@@ -83,7 +83,7 @@ sudo ln -s $installbindir/dc   /usr/bin/dc
 install_base_depenencies $region
 install_sgx_env
 install_docker
-if [$region = "cn"]; then
+if [ $region = "cn" ]; then
     install_docker_images_cn
     sudo sed -i 's/\/\/chainImage: /chainImage: ghcr.nju.edu.cn/dcnetio/dcchain:latest' $installetcdir/manage_config.yaml
     sudo sed -i 's/\/\/nodeImage: /nodeImage: ghcr.nju.edu.cn/dcnetio/dcnode:latest' $installetcdir/manage_config.yaml
