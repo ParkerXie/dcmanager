@@ -6,7 +6,6 @@ localbindir=$localbasedir/bin
 installdir=/opt/dcnetio
 installbindir=$installdir/bin
 installetcdir=$installdir/etc
-installlogdir=$installdir/log
 datadir=$installdir/data
 disksdir=$installdir/disks
 source $localscriptdir/init.sh
@@ -22,7 +21,9 @@ EOF
 exit 0
 }
 
-
+if [ $(id -u) -ne 0 ]; then
+    echo -e ${RED} "Please run with sudo!" ${NC} && exit 
+fi
 
 while true ; do
     case "$1" in
@@ -41,9 +42,7 @@ while true ; do
 done
 
 
-if [ $(id -u) -ne 0 ]; then
-    echo -e ${RED} "Please run with sudo!" ${NC} && exit 
-fi
+
 BEGINTIME=$(date "+%Y-%m-%d %H:%M:%S")
 echo $BEGINTIME '>>  start dc  node install...'
 USERNAME=$(getent passwd `who` | head -n 1 | cut -d : -f 1)
@@ -63,9 +62,6 @@ fi
 if [ ! -d $installetcdir ]; then
     sudo mkdir -p $installetcdir
 fi
-if [ ! -d $installlogdir ]; then
-    sudo mkdir -p $installlogdir
-fi
 if [ ! -d $datadir ]; then
     sudo mkdir -p $datadir
 fi
@@ -84,17 +80,9 @@ install_base_depenencies $region
 install_sgx_env
 install_docker
 if [ $region = "cn" ]; then
-    install_docker_images_cn
-    sudo sed -i 's/\/\/chainImage: /chainImage: ghcr.nju.edu.cn/dcnetio/dcchain:latest' $installetcdir/manage_config.yaml
-    sudo sed -i 's/\/\/nodeImage: /nodeImage: ghcr.nju.edu.cn/dcnetio/dcnode:latest' $installetcdir/manage_config.yaml
-    sudo sed -i 's/\/\/upgradeImage: /upgradeImage: ghcr.nju.edu.cn/dcnetio/dcupgrade:latest' $installetcdir/manage_config.yaml
-    sudo sed -i 's/\/\/pccsImage: /upgradeImage: ghcr.nju.edu.cn/dcnetio/pccs:latest' $installetcdir/manage_config.yaml
+    install_docker_images_cn $installetcdir
 else
-    install_docker_images
-    sudo sed -i 's/\/\/chainImage: /chainImage: ghcr.io/dcnetio/dcchain:latest' $installetcdir/manage_config.yaml
-    sudo sed -i 's/\/\/nodeImage: /nodeImage: ghcr.io/dcnetio/dcnode:latest' $installetcdir/manage_config.yaml
-    sudo sed -i 's/\/\/upgradeImage: /upgradeImage: ghcr.io/dcnetio/dcupgrade:latest' $installetcdir/manage_config.yaml
-    sudo sed -i 's/\/\/pccsImage: /upgradeImage: ghcr.io/dcnetio/pccs:latest' $installetcdir/manage_config.yaml
+    install_docker_images  $installetcdir
 fi
 install_sgx_env
 

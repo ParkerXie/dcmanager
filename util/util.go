@@ -188,26 +188,26 @@ func StartContainer(ctx context.Context, containerName string, config *container
 		fmt.Printf("creating %s container ...\n", containerName)
 		resp, cerr := cli.ContainerCreate(ctx, config, hostConfig, nil, nil, containerName)
 		if cerr != nil {
-			fmt.Fprintf(os.Stderr, "create container fail,err:%v", cerr)
+			fmt.Fprintf(os.Stderr, "create container fail,err:%v\r\n", cerr)
 			return cerr
 		}
 		containerId = resp.ID
 	}
 	execResp, err := cli.ContainerInspect(ctx, containerId)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "inspect %s container fail,err: %v", containerName, err)
+		fmt.Fprintf(os.Stderr, "inspect %s container fail,err: %v\r\n", containerName, err)
 		return
 
 	}
 	if !execResp.State.Running { // 服务没启动
 		fmt.Printf("starting %s  ...\n", containerName)
 		if err := cli.ContainerStart(ctx, containerId, types.ContainerStartOptions{}); err != nil {
-			fmt.Fprintf(os.Stderr, "start %s fail,err: %v", containerName, err)
+			fmt.Fprintf(os.Stderr, "start %s fail,err: %v\r\n", containerName, err)
 			return err
 		}
-		fmt.Printf("start %s success\n", containerName)
+		fmt.Printf("start %s success\r\n", containerName)
 	} else {
-		fmt.Printf("%s is running\n", containerName)
+		fmt.Printf("%s is running\r\n", containerName)
 	}
 	return
 }
@@ -233,9 +233,9 @@ func StopContainer(ctx context.Context, containerName string) (err error) {
 		}
 	}
 	if containerId != "" {
-		fmt.Printf("stopping %s  ...\n", containerName)
+		fmt.Printf("stopping %s  ...\r\n", containerName)
 		if err = cli.ContainerStop(ctx, containerId, nil); err != nil {
-			fmt.Fprintf(os.Stderr, "stop %s  fail,err: %v", containerName, err)
+			fmt.Fprintf(os.Stderr, "stop %s  fail,err: %v\r\n", containerName, err)
 			return
 		}
 	} else {

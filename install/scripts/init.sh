@@ -235,69 +235,113 @@ function install_docker(){
 }
 
 
+
+
+
+#get docker tag list from ghcr.io
+function get_docker_newesttag_list(){
+   #get  fake NOOP token from github
+   noop_token=$(curl -s https://ghcr.io/token\?scope\="repository:$1:pull" | jq -r .token)
+   docker_tag_list=$(curl -H "Authorization: Bearer $noop_token" https://ghcr.io/v2/$1/tags/list  | jq -r '.tags[]')
+   if [ $? -ne 0 ]; then
+        echo -e ${RED} "4.1   get docker tag list from ghcr.io failed" ${NC} ${NC} && exit 
+   fi
+   #get newest docker tag
+   newest_docker_tag=$(echo $docker_tag_list | awk '{print $NF}')
+   echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.2   get docker tag list from ghcr.io success' ${NC}
+}
+
+
+
+
 ## 4.0 下载 docker 镜像
 function install_docker_images(){
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.0   pull image from ghcr.io/dcnetio/pccs' ${NC}
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.0   get dcnetio/pccs newest tag' ${NC}
+    newestTag=$(get_docker_newesttag_list dcnetio/pccs)
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.1   pull image from ghcr.io/dcnetio/pccs:$newestTag' ${NC}
     echo
-    docker pull ghcr.io/dcnetio/pccs:latest
+    docker pull ghcr.io/dcnetio/pccs:$newestTag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.0   pull image from ghcr.io/dcnetio/pccs failed" ${NC} ${NC} && exit
+        echo -e ${RED} "4.2   pull image from ghcr.io/dcnetio/pccs failed" ${NC} ${NC} && exit
     fi
+    sudo sed -i 's/pccsImage:.*/upgradeImage: ghcr.io\/dcnetio\/pccs:$newestTag' $1/manage_config.yaml
     echo
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.1   pull image from ghcr.io/dcnetio/dcchain' ${NC}
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.3   get dcnetio/dcchain newest tag' ${NC}
+    newestTag=$(get_docker_newesttag_list dcnetio/dcchain)
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.4   pull image from ghcr.io/dcnetio/dcchain:$newestTag' ${NC}
     echo
-    docker pull ghcr.io/dcnetio/dcchain:0.0.1
+    docker pull ghcr.io/dcnetio/dcchain:$newestTag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.1   pull image from ghcr.io/dcnetio/dcchain failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "4.5   pull image from ghcr.io/dcnetio/dcchain failed" ${NC} ${NC} && exit 
     fi
+    sudo sed -i 's/chainImage:.*/chainImage: ghcr.io\/dcnetio\/dcchain:$newestTag' $1/manage_config.yaml
     echo
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.2   pull image from ghcr.io/dcnetio/dcupdate' ${NC}
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.6   get dcnetio/dcupgrade newest tag' ${NC}
+    newestTag=$(get_docker_newesttag_list dcnetio/dcupgrade)
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.7   pull image from ghcr.io/dcnetio/dcupgrade:$newestTag' ${NC}
     echo
-    docker pull ghcr.io/dcnetio/dcupgrade:latest
+    docker pull ghcr.io/dcnetio/dcupgrade:$newestTag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.2   pull image from ghcr.io/dcnetio/dcupdate failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "4.8   pull image from ghcr.io/dcnetio/dcupgrade failed" ${NC} ${NC} && exit 
     fi
+    sudo sed -i 's/upgradeImage:.*/upgradeImage: ghcr.io\/dcnetio\/dcupgrade:$newestTag' $1/manage_config.yaml
     echo
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.3   pull image from ghcr.io/dcnetio/dcnode' ${NC}
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.9   get dcnetio/dcnode newest tag' ${NC}
+    newestTag=$(get_docker_newesttag_list dcnetio/dcupgrade)
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  5.0   pull image from ghcr.io/dcnetio/dcnode:$newestTag' ${NC}
     echo
-    docker pull ghcr.io/dcnetio/dcnode:0.0.1
+    docker pull ghcr.io/dcnetio/dcnode:$newestTag
     if [ $? -ne 0 ]; then
         echo -e ${RED} "4.3   pull image from ghcr.io/dcnetio/dcnode failed" ${NC} ${NC} && exit 
     fi
+    sudo sed -i 's/nodeImage:.*/nodeImage: ghcr.io\/dcnetio\/dcnode:$newestTag' $1/manage_config.yaml
     echo
 
 }
 
 
 ## 4.0-cn 从 ghcr.nju.edu.cn下载 docker 镜像 
+
 function install_docker_images_cn(){
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.0   pull image from ghcr.nju.edu.cn/dcnetio/pccs' ${NC}
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.0   get dcnetio/pccs newest tag' ${NC}
+    newestTag=$(get_docker_newesttag_list dcnetio/pccs)
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.1   pull image from ghcr.nju.edu.cn/dcnetio/pccs:$newestTag' ${NC}
     echo
-    docker pull ghcr.nju.edu.cn/dcnetio/pccs:latest
+    docker pull ghcr.nju.edu.cn/dcnetio/pccs:$newestTag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.0   pull image from ghcr.nju.edu.cn/dcnetio/pccs failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "4.2   pull image from ghcr.nju.edu.cn/dcnetio/pccs failed" ${NC} ${NC} && exit
     fi
+    sudo sed -i 's/pccsImage:.*/upgradeImage: ghcr.nju.edu.cn\/dcnetio\/pccs:$newestTag' $1/manage_config.yaml
     echo
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.1   pull image from ghcr.nju.edu.cn/dcnetio/dcchain' ${NC}
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.3   get dcnetio/dcchain newest tag' ${NC}
+    newestTag=$(get_docker_newesttag_list dcnetio/dcchain)
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.4   pull image from ghcr.nju.edu.cn/dcnetio/dcchain:$newestTag' ${NC}
     echo
-    docker pull ghcr.nju.edu.cn/dcnetio/dcchain:0.0.1
+    docker pull ghcr.nju.edu.cn/dcnetio/dcchain:$newestTag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.1   pull image from ghcr.nju.edu.cn/dcnetio/dcchain failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "4.5   pull image from ghcr.nju.edu.cn/dcnetio/dcchain failed" ${NC} ${NC} && exit 
     fi
+    sudo sed -i 's/chainImage:.*/chainImage: ghcr.nju.edu.cn\/dcnetio\/dcchain:$newestTag' $1/manage_config.yaml
     echo
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.2   pull image from ghcr.nju.edu.cn/dcnetio/dcupdate' ${NC}
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.6   get dcnetio/dcupgrade newest tag' ${NC}
+    newestTag=$(get_docker_newesttag_list dcnetio/dcupgrade)
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.7   pull image from ghcr.nju.edu.cn/dcnetio/dcupgrade:$newestTag' ${NC}
     echo
-    docker pull ghcr.nju.edu.cn/dcnetio/dcupgrade:latest
+    docker pull ghcr.nju.edu.cn/dcnetio/dcupgrade:$newestTag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.2   pull image from ghcr.nju.edu.cn/dcnetio/dcupdate failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "4.8   pull image from ghcr.nju.edu.cn/dcnetio/dcupgrade failed" ${NC} ${NC} && exit 
     fi
+    sudo sed -i 's/upgradeImage:.*/upgradeImage: ghcr.nju.edu.cn\/dcnetio\/dcupgrade:$newestTag' $1/manage_config.yaml
     echo
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.3   pull image from ghcr.nju.edu.cn/dcnetio/dcnode' ${NC}
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.9   get dcnetio/dcnode newest tag' ${NC}
+    newestTag=$(get_docker_newesttag_list dcnetio/dcupgrade)
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  5.0   pull image from ghcr.nju.edu.cn/dcnetio/dcnode:$newestTag' ${NC}
     echo
-    docker pull ghcr.nju.edu.cn/dcnetio/dcnode:0.0.1
+    docker pull ghcr.nju.edu.cn/dcnetio/dcnode:$newestTag
     if [ $? -ne 0 ]; then
         echo -e ${RED} "4.3   pull image from ghcr.nju.edu.cn/dcnetio/dcnode failed" ${NC} ${NC} && exit 
     fi
+    sudo sed -i 's/nodeImage:.*/nodeImage: ghcr.nju.edu.cn\/dcnetio\/dcnode:$newestTag' $1/manage_config.yaml
     echo
 
 }
