@@ -68,32 +68,32 @@ func ShowHelp() {
 	fmt.Println("command")
 	fmt.Println("")
 	fmt.Println(" start {node|chain|all}                  start service with service_name")
-	fmt.Println("                                         (\"node\": start dcnode service)")
-	fmt.Println("                                         (\"chain\": start dcchain service)")
-	fmt.Println("                                         (\"all\": start dcnode and dcchain service)")
+	fmt.Println("                                         \"node\": start dcnode service")
+	fmt.Println("                                         \"chain\": start dcchain service")
+	fmt.Println("                                         \"all\": start dcnode and dcchain service")
 	fmt.Println(" stop {node|chain|all}                   stop service  with service_name")
-	fmt.Println("                                         (\"node\": stop dcnode service)")
-	fmt.Println("                                         (\"chain\": stop dcchain service)")
-	fmt.Println("                                         (\"all\": stop dcnode and dcchain service)")
+	fmt.Println("                                         \"node\": stop dcnode service")
+	fmt.Println("                                         \"chain\": stop dcchain service")
+	fmt.Println("                                         \"all\": stop dcnode and dcchain service")
 	fmt.Println(" status {node|chain|all}                 check dc daemon status and  service status")
-	fmt.Println("                                         (\"node\": stop dcnode service)")
-	fmt.Println("                                         (\"chain\": stop dcchain service)")
-	fmt.Println("                                         (\"all\": stop dcnode and dcchain service)")
+	fmt.Println("                                         \"node\": stop dcnode service")
+	fmt.Println("                                         \"chain\": stop dcchain service")
+	fmt.Println("                                         \"all\": stop dcnode and dcchain service")
 	fmt.Println(" log  {node|chain|upgrade}               show running log with service_name")
-	fmt.Println("                                         (\"node\":  show dcnode container running log)")
-	fmt.Println("                                         (\"chain\":  show dcchain container running log)")
-	fmt.Println("                                         (\"upgrade\":  show dcupgrade container running log)")
+	fmt.Println("                                         \"node\":  show dcnode container running log")
+	fmt.Println("                                         \"chain\":  show dcchain container running log")
+	fmt.Println("                                         \"upgrade\":  show dcupgrade container running log")
 	fmt.Println(" upgrade [options]                       upgrade dcnode to newest version that configed on blockchain")
 	fmt.Println("                                         (options: \"daemon\"|\"cancel\"")
-	fmt.Println("                                         (\"daemon\": dcmanager will run in deamon mode,and auto updrage dcnode ")
-	fmt.Println("                                         (\"cancel\": cancel dcmanager deamon mode")
+	fmt.Println("                                         \"daemon\": dcmanager will run in deamon mode,and auto updrage dcnode ")
+	fmt.Println("                                         \"cancel\": cancel dcmanager deamon mode")
 	fmt.Println("                                         when a new dcnode version configed on blockchain")
 	fmt.Println(" uniqueid  {node|upgrade}                show soft version and sgx enclaveid ")
 	fmt.Println(" checksum  filepath                      generate  sha256 checksum for file in the \"filepath\"")
 	fmt.Println(" get cid [--name][--timeout][--secret]   get file from dc net with \"cid\" ")
-	fmt.Println("                                         (\"name\": file to save name)")
-	fmt.Println("                                         (\"timeout\":  wait seconds for file to complete download)")
-	fmt.Println("                                         (\"secret\":  file decode secret with base32 encoded)")
+	fmt.Println("                                         \"name\": file to save name")
+	fmt.Println("                                         \"timeout\":  wait seconds for file to complete download")
+	fmt.Println("                                         \"secret\":  file decode secret with base32 encoded")
 	fmt.Println(" rotate-keys	                          upgrade dcnode to newest version that configed on blockchain")
 }
 
@@ -106,12 +106,22 @@ func StartCommandDeal() {
 	}
 	switch os.Args[2] {
 	case "node":
-		startDcNode()
+		err := startDcNode()
+		if err == nil {
+			showContainerLog(nodeContainerName)
+		}
+
 	case "chain":
-		startDcChain()
+		err := startDcChain()
+		if err == nil {
+			showContainerLog(chainContainerName)
+		}
+
 	case "all":
 		startDcChain()
+		showLogsOnNewWindowForContainer(chainContainerName)
 		startDcNode()
+		showContainerLog(nodeContainerName)
 	default:
 		ShowHelp()
 	}
@@ -130,6 +140,7 @@ func StopCommandDeal() {
 		stopDcchainInDocker()
 	case "all":
 		stopDcchainInDocker()
+
 		stopDcnodeInDocker()
 	default:
 		ShowHelp()
@@ -173,44 +184,11 @@ func LogCommandDeal() { //
 	}
 	switch os.Args[2] {
 	case "node":
-		containerId, err := findContainerIdByName(nodeContainerName)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "find container id error: %v\r\n", err)
-			return
-		}
-		log.Info("container id:", containerId)
-		err = showLogsForContainer(containerId)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "show logs error: %v\r\n", err)
-			return
-		}
+		showContainerLog(nodeContainerName)
 	case "chain":
-		containerId, err := findContainerIdByName(chainContainerName)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "find container id error: %v\r\n", err)
-			return
-		}
-		if containerId == "" {
-			fmt.Fprintf(os.Stderr, "no dcchain service found\r\n")
-			return
-		}
-		err = showLogsForContainer(containerId)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "show logs error: %v\r\n", err)
-			return
-		}
+		showContainerLog(chainContainerName)
 	case "upgrade":
-		containerId, err := findContainerIdByName(upgradeContainerName)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "find container id error: %v\r\n", err)
-			return
-		}
-		log.Info("container id:", containerId)
-		err = showLogsForContainer(containerId)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "show logs error: %v\r\n", err)
-			return
-		}
+		showContainerLog(upgradeContainerName)
 	default:
 		ShowHelp()
 	}
@@ -515,8 +493,8 @@ func startDcNode() (err error) {
 	return
 }
 
-func startDcChain() {
-	startDcchainInDocker()
+func startDcChain() error {
+	return startDcchainInDocker()
 }
 
 //start dcnode in docker
@@ -583,9 +561,9 @@ func startDcnodeInDocker() (err error) {
 }
 
 //start dcchain in docker
-func startDcchainInDocker() {
+func startDcchainInDocker() (err error) {
 	ctx := context.Background()
-	_, err := util.CreateVolume(ctx, chainVolueName)
+	_, err = util.CreateVolume(ctx, chainVolueName)
 	if err != nil {
 		return
 	}
@@ -626,7 +604,8 @@ func startDcchainInDocker() {
 		Entrypoint: entrypoint,
 	}
 	//start container
-	util.StartContainer(ctx, chainContainerName, containerConfig, hostConfig)
+	err = util.StartContainer(ctx, chainContainerName, containerConfig, hostConfig)
+	return
 
 }
 
@@ -1129,6 +1108,42 @@ func runPccsInDocker() (err error) {
 	return
 }
 
+//show Container log
+func showContainerLog(containerName string) {
+	containerId, err := findContainerIdByName(containerName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "find container id error: %v\r\n", err)
+		return
+	}
+	err = showLogsForContainer(containerId)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "show logs error: %v\r\n", err)
+		return
+	}
+}
+
+//show container logs in new window
+func showLogsOnNewWindowForContainer(containerId string) (err error) {
+	cli, _ := client.NewClientWithOpts(client.FromEnv)
+	reader, err := cli.ContainerLogs(context.Background(), containerId, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true, Tail: "100"})
+	if err != nil {
+		return
+	}
+	defer cli.Close()
+	defer reader.Close()
+	//创建一个新的窗口
+	cmd := exec.Command("cmd", "/c", "start", "docker logs")
+	cmd.Stdin = reader
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
+	if err != nil {
+		return err
+	}
+	handleInterruptSignal()
+	return
+}
+
 //打印docker中指定容器ID的日志
 func showLogsForContainer(containerId string) (err error) {
 	cli, _ := client.NewClientWithOpts(client.FromEnv)
@@ -1136,6 +1151,7 @@ func showLogsForContainer(containerId string) (err error) {
 	if err != nil {
 		return
 	}
+	defer cli.Close()
 	defer reader.Close()
 	_, err = io.Copy(os.Stdout, reader)
 	if err != nil && err != io.EOF {
