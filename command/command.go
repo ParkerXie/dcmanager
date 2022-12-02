@@ -578,7 +578,7 @@ func startDcnodeInDocker() (err error) {
 		Image: config.RunningConfig.NodeImage,
 	}
 	//start container
-	err = util.StartContainer(ctx, nodeContainerName, containerConfig, hostConfig)
+	err = util.StartContainer(ctx, nodeContainerName, false, containerConfig, hostConfig)
 	return
 }
 
@@ -626,7 +626,7 @@ func startDcchainInDocker() (err error) {
 		Entrypoint: entrypoint,
 	}
 	//start container
-	err = util.StartContainer(ctx, chainContainerName, containerConfig, hostConfig)
+	err = util.StartContainer(ctx, chainContainerName, true, containerConfig, hostConfig)
 	return
 
 }
@@ -672,7 +672,7 @@ func startDcupgradeInDocker() (err error) {
 		Image: config.RunningConfig.UpgradeImage,
 	}
 	//start container
-	util.StartContainer(ctx, upgradeContainerName, containerConfig, hostConfig)
+	util.StartContainer(ctx, upgradeContainerName, true, containerConfig, hostConfig)
 	return
 }
 
@@ -1133,7 +1133,7 @@ func runPccsInDocker() (err error) {
 		Image: config.RunningConfig.PccsImage,
 		Env:   []string{apiKeyStr},
 	}
-	err = util.StartContainer(ctx, pccsContainerName, cConfig, hostConfig)
+	err = util.StartContainer(ctx, pccsContainerName, true, cConfig, hostConfig)
 	//check if pccs is running
 	if err == nil {
 		//wait for pccs to start

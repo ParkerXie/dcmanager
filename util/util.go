@@ -160,8 +160,8 @@ func CreateVolume(ctx context.Context, volumeName string) (v *types.Volume, err 
 	return
 }
 
-//start container
-func StartContainer(ctx context.Context, containerName string, config *container.Config, hostConfig *container.HostConfig) (err error) {
+//start container removeOldFlag: true  if exist same name container with different image,remove the old container
+func StartContainer(ctx context.Context, containerName string, removeOldFlag bool, config *container.Config, hostConfig *container.HostConfig) (err error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return
@@ -188,8 +188,20 @@ func StartContainer(ctx context.Context, containerName string, config *container
 		fmt.Printf("creating %s container ...\n", containerName)
 		resp, cerr := cli.ContainerCreate(ctx, config, hostConfig, nil, nil, containerName)
 		if cerr != nil {
-			fmt.Fprintf(os.Stderr, "create container fail,err:%v\r\n", cerr)
-			return cerr
+			//remove container with same name
+			if strings.Contains(cerr.Error(), "Conflict. The container name \"/"+containerName+"\" is already in use by container") {
+				fmt.Printf("container %s already exists, removing it...\n", containerName)
+				if err = cli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true}); err != nil {
+					return
+				}
+				resp, err = cli.ContainerCreate(ctx, config, hostConfig, nil, nil, containerName)
+				if err != nil {
+					return
+				}
+			} else {
+				err = cerr
+				return
+			}
 		}
 		containerId = resp.ID
 	}

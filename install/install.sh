@@ -34,6 +34,9 @@ while true ; do
             region=$2
             shift 2
             break ;;
+        --help)
+            help
+            break ;;
         *)
             break;
             ;;
