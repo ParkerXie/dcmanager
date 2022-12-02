@@ -35,7 +35,6 @@ while true ; do
             shift 2
             break ;;
         *)
-            help
             break;
             ;;
     esac

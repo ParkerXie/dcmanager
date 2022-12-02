@@ -47,39 +47,48 @@ function install_base_depenencies(){
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.4.   sudo apt-get update' ${NC}
     sudo apt-get update || 
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "1.4.   sudo apt-get update failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "1.4.   sudo apt-get update failed" ${NC}  && exit 
     fi
     ## 1.5 upgrade apt-get
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.5.   sudo apt-get upgrade' ${NC}
     sudo apt-get upgrade -y 
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "1.5.   sudo apt-get upgrade failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "1.5.   sudo apt-get upgrade failed" ${NC}  && exit 
     fi
 
     ## 1.6 install build-essential 
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.6.   sudo apt install build-essential' ${NC}
-    sudo apt-get -y install  build-essential 
+    sudo apt-get -y install   build-essential 
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "1.6.   sudo apt install build-essential failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "1.6.   sudo apt install build-essential failed" ${NC}  && exit 
     fi
 
     ## 1.7 install libssl-dev 
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.7.   sudo apt install  libssl-dev' ${NC}
     sudo apt-get -y install   libssl-dev  
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "1.7.   sudo apt install  libssl-dev failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "1.7.   sudo apt install  libssl-dev failed" ${NC}  && exit 
     fi
 
     ## 1.8 install dkms
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.8.   sudo apt install  dkms' ${NC}
     sudo apt-get  -y install dkms 
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "1.8.   sudo apt install  dkms failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "1.8.   sudo apt install  dkms failed" ${NC}  && exit 
     fi
 
     ## 1.9 install git 
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.9.   sudo apt-get  install  git' ${NC}
     sudo apt-get -y install  git 
+    ## 1.10 install jq 
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.10.   sudo apt-get  install  jq' ${NC}
+    sudo apt-get -y install  jq 
+    ## 1.11 install curl
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.10.   sudo apt-get  install  curl' ${NC}
+    sudo apt-get -y install  curl 
+     ## 1.11 install wget
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  1.10.   sudo apt-get  install  wget' ${NC}
+    sudo apt-get -y install  wget 
 
 }
 
@@ -99,7 +108,7 @@ function install_sgx_env(){
         chmod +x sgx_linux_x64_driver_1.41.bin
         sudo ./sgx_linux_x64_driver_1.41.bin
         if [ $? -ne 0 ]; then
-            echo -e ${RED} "2.0  install sgx_linux_x64_driver_1.41.bin failed" ${NC} ${NC} && exit 
+            echo -e ${RED} "2.0  install sgx_linux_x64_driver_1.41.bin failed" ${NC}  && exit 
         fi
     else
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.0  ******* sgx_driver aleady installed ********' ${NC}
@@ -109,23 +118,24 @@ function install_sgx_env(){
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.1   apt-key add intel-sgx-deb.key' ${NC}
     FILE=intel-sgx-deb.key
     if [[ ! -f "$FILE" ]]; then
-        wget  https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key
+        wget --no-check-certificate  https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key
     fi
+  
     result=$(echo '809cb39c4089843f923143834550b185f2e6aa91373a05c8ec44026532dab37c intel-sgx-deb.key' | sha256sum -c | grep 'OK')
     if [[ $result = "" ]]; then 
-    echo -e ${RED} "2.1. intel-sgx-deb.key checksum failed" ${NC} && exit  ${NC}
+        echo -e ${RED} "2.1. intel-sgx-deb.key checksum failed" ${NC} && exit 
     fi
     sudo apt-key add intel-sgx-deb.key
     echo 'deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main' | sudo tee /etc/apt/sources.list.d/intel-sgx.list
     sudo apt-get update -y 
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "apt-get update failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "apt-get update failed" ${NC}  && exit 
     fi
     ## 2.2 libsgx-dcap-default-qpl 安装
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.2   download and  install libsgx-dcap-default-qpl' ${NC}
     sudo apt-get install libsgx-dcap-default-qpl 
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "2.2   download and  install libsgx-dcap-default-qpl failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "2.2   download and  install libsgx-dcap-default-qpl failed" ${NC} && exit 
     fi
     FILE=/usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so
     if [[  -f "$FILE" ]]; then
@@ -133,7 +143,7 @@ function install_sgx_env(){
     fi
     sudo ln -s /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so.1 /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "2.2 create soft link for /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so  failed: $? " ${NC} ${NC} && exit 
+        echo -e ${RED} "2.2 create soft link for /usr/lib/x86_64-linux-gnu/libdcap_quoteprov.so  failed: $? " ${NC}  && exit 
         exit
     fi
 
@@ -146,19 +156,19 @@ function install_sgx_env(){
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.4   download and  install libsgx-enclave-common' ${NC}
     sudo apt-get -y install  --no-install-recommends libsgx-enclave-common 
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "2.4   download and  install libsgx-enclave-common failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "2.4   download and  install libsgx-enclave-common failed" ${NC}  && exit 
     fi
     ## 2.5 libsgx-dcap-default-qpl 安装
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.5   download and  install libsgx-quote-ex' ${NC}
     sudo apt-get -y install libsgx-quote-ex 
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "2.5   download and  install libsgx-quote-ex failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "2.5   download and  install libsgx-quote-ex failed" ${NC}  && exit 
     fi
     ## 2.6 检查sgx相关驱动与软件是否安装成功
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.6   check if sgx env init success' ${NC}
     /sbin/modprobe intel_sgx
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "2.6   modprobe intel_sgx failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "2.6   modprobe intel_sgx failed" ${NC}  && exit 
     fi
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.6   sgx env init success' ${NC}
 }
@@ -236,7 +246,7 @@ function install_docker(){
 
 
 
-
+newest_docker_tag="latest"
 
 #get docker tag list from ghcr.io
 function get_docker_newesttag_list(){
@@ -244,11 +254,10 @@ function get_docker_newesttag_list(){
    noop_token=$(curl -s https://ghcr.io/token\?scope\="repository:$1:pull" | jq -r .token)
    docker_tag_list=$(curl -H "Authorization: Bearer $noop_token" https://ghcr.io/v2/$1/tags/list  | jq -r '.tags[]')
    if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.1   get docker tag list from ghcr.io failed" ${NC} ${NC} && exit 
+        echo -e ${RED} " get docker tag list from ghcr.io failed" ${NC}  && exit 
    fi
    #get newest docker tag
    newest_docker_tag=$(echo $docker_tag_list | awk '{print $NF}')
-   echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.2   get docker tag list from ghcr.io success' ${NC}
 }
 
 
@@ -257,91 +266,90 @@ function get_docker_newesttag_list(){
 ## 4.0 下载 docker 镜像
 function install_docker_images(){
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.0   get dcnetio/pccs newest tag' ${NC}
-    newestTag=$(get_docker_newesttag_list dcnetio/pccs)
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.1   pull image from ghcr.io/dcnetio/pccs:$newestTag' ${NC}
+    get_docker_newesttag_list dcnetio/pccs
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  4.1   pull image from ghcr.io/dcnetio/pccs:${newest_docker_tag}" ${NC}
     echo
-    docker pull ghcr.io/dcnetio/pccs:$newestTag
+    docker pull ghcr.io/dcnetio/pccs:$newest_docker_tag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.2   pull image from ghcr.io/dcnetio/pccs failed" ${NC} ${NC} && exit
+        echo -e ${RED} "4.2   pull image from ghcr.io/dcnetio/pccs failed" ${NC}  && exit
     fi
-    sudo sed -i 's/pccsImage:.*/upgradeImage: ghcr.io\/dcnetio\/pccs:$newestTag' $1/manage_config.yaml
+    sudo sed -i "s/pccsImage:.*/pccsImage: ghcr.io\/dcnetio\/pccs:${newest_docker_tag}/" $1/manage_config.yaml
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.3   get dcnetio/dcchain newest tag' ${NC}
-    newestTag=$(get_docker_newesttag_list dcnetio/dcchain)
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.4   pull image from ghcr.io/dcnetio/dcchain:$newestTag' ${NC}
+    get_docker_newesttag_list dcnetio/dcchain
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  4.4   pull image from ghcr.io/dcnetio/dcchain:${newest_docker_tag}" ${NC}
     echo
-    docker pull ghcr.io/dcnetio/dcchain:$newestTag
+    docker pull ghcr.io/dcnetio/dcchain:$newest_docker_tag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.5   pull image from ghcr.io/dcnetio/dcchain failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "4.5   pull image from ghcr.io/dcnetio/dcchain failed" ${NC}  && exit 
     fi
-    sudo sed -i 's/chainImage:.*/chainImage: ghcr.io\/dcnetio\/dcchain:$newestTag' $1/manage_config.yaml
+    sudo sed -i "s/chainImage:.*/chainImage: ghcr.io\/dcnetio\/dcchain:${newest_docker_tag}/" $1/manage_config.yaml
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.6   get dcnetio/dcupgrade newest tag' ${NC}
-    newestTag=$(get_docker_newesttag_list dcnetio/dcupgrade)
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.7   pull image from ghcr.io/dcnetio/dcupgrade:$newestTag' ${NC}
+    get_docker_newesttag_list dcnetio/dcupgrade
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  4.7   pull image from ghcr.io/dcnetio/dcupgrade:${newest_docker_tag}" ${NC}
     echo
-    docker pull ghcr.io/dcnetio/dcupgrade:$newestTag
+    docker pull ghcr.io/dcnetio/dcupgrade:$newest_docker_tag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.8   pull image from ghcr.io/dcnetio/dcupgrade failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "4.8   pull image from ghcr.io/dcnetio/dcupgrade failed" ${NC}  && exit 
     fi
-    sudo sed -i 's/upgradeImage:.*/upgradeImage: ghcr.io\/dcnetio\/dcupgrade:$newestTag' $1/manage_config.yaml
+    sudo sed -i "s/upgradeImage:.*/upgradeImage: ghcr.io\/dcnetio\/dcupgrade:${newest_docker_tag}/" $1/manage_config.yaml
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.9   get dcnetio/dcnode newest tag' ${NC}
-    newestTag=$(get_docker_newesttag_list dcnetio/dcupgrade)
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  5.0   pull image from ghcr.io/dcnetio/dcnode:$newestTag' ${NC}
+    get_docker_newesttag_list dcnetio/dcupgrade
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  5.0   pull image from ghcr.io/dcnetio/dcnode:${newest_docker_tag}" ${NC}
     echo
-    docker pull ghcr.io/dcnetio/dcnode:$newestTag
+    docker pull ghcr.io/dcnetio/dcnode:$newest_docker_tag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.3   pull image from ghcr.io/dcnetio/dcnode failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "4.3   pull image from ghcr.io/dcnetio/dcnode failed" ${NC}  && exit 
     fi
-    sudo sed -i 's/nodeImage:.*/nodeImage: ghcr.io\/dcnetio\/dcnode:$newestTag' $1/manage_config.yaml
+    sudo sed -i "s/nodeImage:.*/nodeImage: ghcr.io\/dcnetio\/dcnode:${newest_docker_tag}/" $1/manage_config.yaml
     echo
 
 }
 
 
 ## 4.0-cn 从 ghcr.nju.edu.cn下载 docker 镜像 
-
 function install_docker_images_cn(){
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.0   get dcnetio/pccs newest tag' ${NC}
-    newestTag=$(get_docker_newesttag_list dcnetio/pccs)
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.1   pull image from ghcr.nju.edu.cn/dcnetio/pccs:$newestTag' ${NC}
+    get_docker_newesttag_list dcnetio/pccs
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  4.1   pull image from ghcr.nju.edu.cn/dcnetio/pccs:${newest_docker_tag}" ${NC}
     echo
-    docker pull ghcr.nju.edu.cn/dcnetio/pccs:$newestTag
+    docker pull ghcr.nju.edu.cn/dcnetio/pccs:$newest_docker_tag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.2   pull image from ghcr.nju.edu.cn/dcnetio/pccs failed" ${NC} ${NC} && exit
+        echo -e ${RED} "4.2   pull image from ghcr.nju.edu.cn/dcnetio/pccs failed" ${NC}  && exit
     fi
-    sudo sed -i 's/pccsImage:.*/upgradeImage: ghcr.nju.edu.cn\/dcnetio\/pccs:$newestTag' $1/manage_config.yaml
+    sudo sed -i "s/pccsImage:.*/pccsImage: ghcr.nju.edu.cn\/dcnetio\/pccs:${newest_docker_tag}/" $1/manage_config.yaml
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.3   get dcnetio/dcchain newest tag' ${NC}
-    newestTag=$(get_docker_newesttag_list dcnetio/dcchain)
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.4   pull image from ghcr.nju.edu.cn/dcnetio/dcchain:$newestTag' ${NC}
+    get_docker_newesttag_list dcnetio/dcchain
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  4.4   pull image from ghcr.nju.edu.cn/dcnetio/dcchain:${newest_docker_tag}" ${NC}
     echo
-    docker pull ghcr.nju.edu.cn/dcnetio/dcchain:$newestTag
+    docker pull ghcr.nju.edu.cn/dcnetio/dcchain:$newest_docker_tag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.5   pull image from ghcr.nju.edu.cn/dcnetio/dcchain failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "4.5   pull image from ghcr.nju.edu.cn/dcnetio/dcchain failed" ${NC}  && exit 
     fi
-    sudo sed -i 's/chainImage:.*/chainImage: ghcr.nju.edu.cn\/dcnetio\/dcchain:$newestTag' $1/manage_config.yaml
+    sudo sed -i "s/chainImage:.*/chainImage: ghcr.nju.edu.cn\/dcnetio\/dcchain:${newest_docker_tag}/" $1/manage_config.yaml
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.6   get dcnetio/dcupgrade newest tag' ${NC}
-    newestTag=$(get_docker_newesttag_list dcnetio/dcupgrade)
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.7   pull image from ghcr.nju.edu.cn/dcnetio/dcupgrade:$newestTag' ${NC}
+    get_docker_newesttag_list dcnetio/dcupgrade
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  4.7   pull image from ghcr.nju.edu.cn/dcnetio/dcupgrade:${newest_docker_tag}" ${NC}
     echo
-    docker pull ghcr.nju.edu.cn/dcnetio/dcupgrade:$newestTag
+    docker pull ghcr.nju.edu.cn/dcnetio/dcupgrade:$newest_docker_tag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.8   pull image from ghcr.nju.edu.cn/dcnetio/dcupgrade failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "4.8   pull image from ghcr.nju.edu.cn/dcnetio/dcupgrade failed" ${NC}  && exit 
     fi
-    sudo sed -i 's/upgradeImage:.*/upgradeImage: ghcr.nju.edu.cn\/dcnetio\/dcupgrade:$newestTag' $1/manage_config.yaml
+    sudo sed -i "s/upgradeImage:.*/upgradeImage: ghcr.nju.edu.cn\/dcnetio\/dcupgrade:${newest_docker_tag}/" $1/manage_config.yaml
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.9   get dcnetio/dcnode newest tag' ${NC}
-    newestTag=$(get_docker_newesttag_list dcnetio/dcupgrade)
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  5.0   pull image from ghcr.nju.edu.cn/dcnetio/dcnode:$newestTag' ${NC}
+    get_docker_newesttag_list dcnetio/dcupgrade
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  5.0   pull image from ghcr.nju.edu.cn/dcnetio/dcnode:${newest_docker_tag}" ${NC}
     echo
-    docker pull ghcr.nju.edu.cn/dcnetio/dcnode:$newestTag
+    docker pull ghcr.nju.edu.cn/dcnetio/dcnode:$newest_docker_tag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.3   pull image from ghcr.nju.edu.cn/dcnetio/dcnode failed" ${NC} ${NC} && exit 
+        echo -e ${RED} "4.3   pull image from ghcr.nju.edu.cn/dcnetio/dcnode failed" ${NC}  && exit 
     fi
-    sudo sed -i 's/nodeImage:.*/nodeImage: ghcr.nju.edu.cn\/dcnetio\/dcnode:$newestTag' $1/manage_config.yaml
+    sudo sed -i "s/nodeImage:.*/nodeImage: ghcr.nju.edu.cn\/dcnetio\/dcnode:${newest_docker_tag}/" $1/manage_config.yaml
     echo
 
 }

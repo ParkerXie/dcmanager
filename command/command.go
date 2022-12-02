@@ -67,22 +67,25 @@ func ShowHelp() {
 	fmt.Println("usage: dc command [options]")
 	fmt.Println("command")
 	fmt.Println("")
-	fmt.Println(" start {node|chain|all}                  start service with service_name")
+	fmt.Println(" start {node|chain|pccs|all}             start service with service_name")
 	fmt.Println("                                         \"node\": start dcnode service")
 	fmt.Println("                                         \"chain\": start dcchain service")
+	fmt.Println("                                         \"pccs\": start local pccs service")
 	fmt.Println("                                         \"all\": start dcnode and dcchain service")
-	fmt.Println(" stop {node|chain|all}                   stop service  with service_name")
+	fmt.Println(" stop {node|chain|pccs|all}              stop service  with service_name")
 	fmt.Println("                                         \"node\": stop dcnode service")
 	fmt.Println("                                         \"chain\": stop dcchain service")
+	fmt.Println("                                         \"pccs\": stop local pccs service")
 	fmt.Println("                                         \"all\": stop dcnode and dcchain service")
 	fmt.Println(" status {node|chain|all}                 check dc daemon status and  service status")
 	fmt.Println("                                         \"node\": stop dcnode service")
 	fmt.Println("                                         \"chain\": stop dcchain service")
 	fmt.Println("                                         \"all\": stop dcnode and dcchain service")
-	fmt.Println(" log  {node|chain|upgrade}               show running log with service_name")
+	fmt.Println(" log  {node|chain|upgrade|pccs}          show running log with service_name")
 	fmt.Println("                                         \"node\":  show dcnode container running log")
 	fmt.Println("                                         \"chain\":  show dcchain container running log")
 	fmt.Println("                                         \"upgrade\":  show dcupgrade container running log")
+	fmt.Println("                                         \"pccs\":  show local pccs  running log")
 	fmt.Println(" upgrade [options]                       upgrade dcnode to newest version that configed on blockchain")
 	fmt.Println("                                         (options: \"daemon\"|\"cancel\"")
 	fmt.Println("                                         \"daemon\": dcmanager will run in deamon mode,and auto updrage dcnode ")
@@ -109,6 +112,8 @@ func StartCommandDeal() {
 		err := startDcNode()
 		if err == nil {
 			showContainerLog(nodeContainerName)
+		} else {
+			log.Error(err)
 		}
 
 	case "chain":
@@ -116,12 +121,22 @@ func StartCommandDeal() {
 		if err == nil {
 			showContainerLog(chainContainerName)
 		}
+	case "pccs":
+		err := runPccsInDocker()
+		if err == nil {
+			showContainerLog(pccsContainerName)
+		}
 
 	case "all":
 		startDcChain()
 		showLogsOnNewWindowForContainer(chainContainerName)
-		startDcNode()
-		showContainerLog(nodeContainerName)
+		err := startDcNode()
+		if err == nil {
+			showContainerLog(nodeContainerName)
+		} else {
+			log.Error(err)
+		}
+
 	default:
 		ShowHelp()
 	}
@@ -138,10 +153,12 @@ func StopCommandDeal() {
 		stopDcnodeInDocker()
 	case "chain":
 		stopDcchainInDocker()
+	case "pccs":
+		stopPccsInDocker()
 	case "all":
-		stopDcchainInDocker()
-
 		stopDcnodeInDocker()
+		stopDcchainInDocker()
+		stopPccsInDocker()
 	default:
 		ShowHelp()
 	}
@@ -189,6 +206,8 @@ func LogCommandDeal() { //
 		showContainerLog(chainContainerName)
 	case "upgrade":
 		showContainerLog(upgradeContainerName)
+	case "pccs":
+		showContainerLog(pccsContainerName)
 	default:
 		ShowHelp()
 	}
@@ -487,7 +506,10 @@ func cancelDaemonCommandDeal() {
 
 func startDcNode() (err error) {
 	//判断pccs（docker）是否已经运行，没有运行，需要先运行
-	runPccsInDocker()
+	err = runPccsInDocker()
+	if err != nil {
+		return
+	}
 	//判断dcnode是否已经运行，没有运行，需要先运行
 	err = startDcnodeInDocker()
 	return
@@ -668,6 +690,13 @@ func stopDcchainInDocker() {
 
 }
 
+//stop dcpccs in docker
+func stopPccsInDocker() {
+	ctx := context.Background()
+	util.StopContainer(ctx, pccsContainerName)
+
+}
+
 //利用dcnode以及dcupdate程序提供本地随机数查询服务，获取它们对应的enclavid
 func getVersionByHttpGet(localport int) (version string, enclaveId string, err error) {
 	dcEnclaveIdUrl := fmt.Sprintf("http://127.0.0.1:%d/version", localport)
@@ -681,8 +710,8 @@ func getVersionByHttpGet(localport int) (version string, enclaveId string, err e
 	if len(values) != 2 {
 		fmt.Println("get invalid version info")
 	} else {
-		version = values[0]
-		enclaveId = values[1]
+		enclaveId = values[0]
+		version = values[1]
 	}
 	return
 
@@ -1084,7 +1113,7 @@ func runPccsInDocker() (err error) {
 	}
 	apiKey := config.RunningConfig.PccsKey
 	if len(apiKey) < 32 { //
-		return fmt.Errorf("invalid pccs subscription key: %s", apiKey)
+		return fmt.Errorf("%s is invalid pccs subscription key.For how to subscribe to Intel Provisioning Certificate Service and receive an API key, goto https://api.portal.trustedservices.intel.com/provisioning-certification and click on 'Subscribe'", apiKey)
 	}
 	apiKeyStr := fmt.Sprintf("APIKEY=%s", apiKey)
 	ctx := context.Background()
@@ -1105,6 +1134,16 @@ func runPccsInDocker() (err error) {
 		Env:   []string{apiKeyStr},
 	}
 	err = util.StartContainer(ctx, pccsContainerName, cConfig, hostConfig)
+	//check if pccs is running
+	if err == nil {
+		//wait for pccs to start
+		time.Sleep(5 * time.Second)
+		_, gerr := util.HttpGet("https://localhost:8081/sgx/certification/v3/rootcacrl")
+		if gerr != nil {
+			log.Errorf("pccs start with err: %v", gerr)
+			return gerr
+		}
+	}
 	return
 }
 
