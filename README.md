@@ -13,6 +13,7 @@ Official dc node service for running dc protocol.
 - Other configurations
 
   - **Secure Boot** in BIOS needs to be turned off
+  - If need to run dcnode,you should register with [Intel](https://api.portal.trustedservices.intel.com/provisioning-certification)(Click on 'Subscribe' in the page) to get a PCCS API key.
 
 ## Install dependencies
 
@@ -20,6 +21,9 @@ Official dc node service for running dc protocol.
 ```shell
 sudo ./install.sh # Use 'sudo ./install.sh --registry cn' to accelerate installation in some areas
 ```
+
+### Config service
+If need to run dcnode,you should update the config file "/opt/dcnetio/etc/manage_config.yaml",and set pccsKey value with PCCS API key you subscribe from intel.
 
 ### Run service
 
