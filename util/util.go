@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/sha256"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"math/rand"
@@ -52,16 +53,23 @@ func HttpGet(url string, args ...string) ([]byte, error) {
 }
 
 func HttpGetWithoutCheckCert(url string, args ...string) ([]byte, error) {
-	client := http.Client{Timeout: time.Second}
+	//	client := http.Client{Timeout: time.Second}
 	if len(args) > 0 {
 		url += "?" + strings.Join(args, "&")
 	}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   time.Second}
 	//request with out check cert
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -220,7 +228,7 @@ func StartContainer(ctx context.Context, containerName string, removeOldFlag boo
 		resp, cerr := cli.ContainerCreate(ctx, config, hostConfig, nil, nil, containerName)
 		if cerr != nil {
 			//remove container with same name
-			if strings.Contains(cerr.Error(), "Conflict. The container name \"/"+containerName+"\" is already in use by container") {
+			if strings.Contains(cerr.Error(), "Conflict. The container name \"/"+containerName+"\" is already in use by container") && removeOldFlag {
 				fmt.Printf("container %s already exists, removing it...\n", containerName)
 				if err = cli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{Force: true}); err != nil {
 					return

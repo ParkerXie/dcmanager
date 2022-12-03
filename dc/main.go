@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	_ "net/http/pprof"
 	"os"
 
@@ -16,6 +17,14 @@ var log = logging.Logger("dcmanager")
 const logpath = "/opt/dcnetio/log"
 
 func main() {
+	args := fmt.Sprintf("%v", os.Args)
+	//trim square brackets
+	args = args[1 : len(args)-1]
+	// if don't run with root, exit
+	if os.Geteuid() != 0 {
+		fmt.Printf("Please run with root privilege.Usage: sudo %s \r\n", args)
+		os.Exit(1)
+	}
 	util.SetupDefaultLoggingConfig(logpath)
 	//判断配置文件是否存在
 	_, err := os.Stat(config.Config_file_path)
