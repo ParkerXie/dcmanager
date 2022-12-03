@@ -30,8 +30,39 @@ func HttpGet(url string, args ...string) ([]byte, error) {
 	if len(args) > 0 {
 		url += "?" + strings.Join(args, "&")
 	}
-
 	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(resp.Body)
+		newStr := buf.String()
+		return nil, fmt.Errorf("http get err status,statuscode: %d,errmsg: %v", resp.StatusCode, newStr)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if len(body) == 0 {
+		return nil, fmt.Errorf("err occur,no data get")
+	}
+	return body, nil
+}
+
+func HttpGetWithoutCheckCert(url string, args ...string) ([]byte, error) {
+	client := http.Client{Timeout: time.Second}
+	if len(args) > 0 {
+		url += "?" + strings.Join(args, "&")
+	}
+	//request with out check cert
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

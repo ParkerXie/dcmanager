@@ -296,7 +296,7 @@ function install_docker_images(){
     sudo sed -i "s/upgradeImage:.*/upgradeImage: ghcr.io\/dcnetio\/dcupgrade:${newest_docker_tag}/" $1/manage_config.yaml
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.9   get dcnetio/dcnode newest tag' ${NC}
-    get_docker_newesttag_list dcnetio/dcupgrade
+    get_docker_newesttag_list dcnetio/dcnode
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  5.0   pull image from ghcr.io/dcnetio/dcnode:${newest_docker_tag}" ${NC}
     echo
     docker pull ghcr.io/dcnetio/dcnode:$newest_docker_tag
@@ -342,7 +342,7 @@ function install_docker_images_cn(){
     sudo sed -i "s/upgradeImage:.*/upgradeImage: ghcr.nju.edu.cn\/dcnetio\/dcupgrade:${newest_docker_tag}/" $1/manage_config.yaml
     echo
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.9   get dcnetio/dcnode newest tag' ${NC}
-    get_docker_newesttag_list dcnetio/dcupgrade
+    get_docker_newesttag_list dcnetio/dcnode
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  5.0   pull image from ghcr.nju.edu.cn/dcnetio/dcnode:${newest_docker_tag}" ${NC}
     echo
     docker pull ghcr.nju.edu.cn/dcnetio/dcnode:$newest_docker_tag
