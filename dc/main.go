@@ -72,7 +72,7 @@ func main() {
 		command.ChecksumCommandDeal()
 	case "get":
 		command.GetFileFromIpfsCommandDeal()
-	case "roate-key":
+	case "rotate-keys":
 		command.RotateKeyCommandDeal()
 	default:
 		command.ShowHelp()

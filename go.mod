@@ -18,6 +18,7 @@ require (
 	github.com/libp2p/go-libp2p-core v0.20.1
 	github.com/multiformats/go-multiaddr v0.8.0
 	gopkg.in/yaml.v2 v2.4.0
+	github.com/mitchellh/go-ps v1.0.0 
 )
 
 require (

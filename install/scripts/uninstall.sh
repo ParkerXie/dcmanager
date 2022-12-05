@@ -27,7 +27,9 @@ if [  -d $installdir ]; then
     #remove  image tag with ghcr.io/dcnetio/pccs
     docker images | grep dcnetio/pccs | awk '{print $3}' | xargs docker rmi -f
     rm -rf $installdir
-    echo "dc uninstalled."
+    rm -rf /usr/bin/dc
+    rm -rf /etc/bash_completion.d/dc
+    echo "Uninstalling dc done."
  else
     echo "dc is not installed!"
 fi

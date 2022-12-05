@@ -3,6 +3,7 @@ package blockchain
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
@@ -146,19 +147,18 @@ func GetPeerAddrsForCid(sCid string) (fileSize int64, peerAddrInfos []peer.AddrI
 	//连接区块链
 	chainApi, err = gsrpc.NewSubstrateAPI(config.RunningConfig.ChainWsUrl)
 	if err != nil {
-		log.Errorf("Cann't connect to blockchain,err: %v", err)
+		fmt.Fprintln(os.Stderr, "Cann't connect to blockchain")
 	}
 	meta, err = chainApi.RPC.State.GetMetadataLatest()
 	if err != nil {
-		log.Errorf("Cann't get meta from blockchain,err: %v", err)
+		fmt.Fprintln(os.Stderr, "Cann't get meta from blockchain")
 	}
 	//等待区块链同步完成
-	log.Info("Wait for blockchain syncing complete")
 	fmt.Println("Wait for blockchain syncing complete")
 	waitForChainSyncCompleted(ctx, chainApi, meta)
-	log.Info("Blockchain syncing completed")
 	fmt.Println("Blockchain syncing completed")
-	fmt.Printf("begin to find peers that store the file for cid: %s\r\n", sCid)
+	//提示开始获取存储位置信息
+	fmt.Println("Start to get storage location information")
 	return getPeerAddrsForCid(sCid, chainApi, meta)
 }
 

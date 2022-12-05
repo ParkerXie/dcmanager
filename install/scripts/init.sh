@@ -152,13 +152,13 @@ function install_sgx_env(){
     sudo sed -i 's/.*use_secure_cert":.*/  "use_secure_cert": false,/' /etc/sgx_default_qcnl.conf
     sudo sed -i 's/\/\/"pccs_api_version": "3.1",/  "pccs_api_version": "3.1",/' /etc/sgx_default_qcnl.conf
 
-    ## 2.4 libsgx-dcap-default-qpl 安装
+    ## 2.4  libsgx-enclave-common 安装
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.4   download and  install libsgx-enclave-common' ${NC}
     sudo apt-get -y install  --no-install-recommends libsgx-enclave-common 
     if [ $? -ne 0 ]; then
         echo -e ${RED} "2.4   download and  install libsgx-enclave-common failed" ${NC}  && exit 
     fi
-    ## 2.5 libsgx-dcap-default-qpl 安装
+    ## 2.5  libsgx-quote-ex 安装
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.5   download and  install libsgx-quote-ex' ${NC}
     sudo apt-get -y install libsgx-quote-ex 
     if [ $? -ne 0 ]; then

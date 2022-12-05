@@ -1,7 +1,6 @@
 package command
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
@@ -12,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -31,6 +29,7 @@ import (
 	goversion "github.com/hashicorp/go-version"
 	logging "github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/mitchellh/go-ps"
 )
 
 const dcNodeListenPort = 6667
@@ -44,12 +43,14 @@ const nodeVolueName = "dcnode"
 const chainVolueName = "dcchain"
 const upgradeVolueName = "upgradeVolueName"
 const pccsVolueName = "dcpccs"
+const daemonFilepath = "/opt/dcnetio/data/.dcupgradedaemon"
 
 var serviceConfigFileContent = `[Unit]
 After=network.target
 
 [Service]
-ExecStart=/opt/dcnetion/bin/startup.sh
+ExecStart=/opt/dcnetio/bin/dc upgrade daemon
+Restart=always
 
 [Install]
 WantedBy=default.target`
@@ -58,13 +59,12 @@ WantedBy=default.target`
 const serviceConfigFile = "/etc/systemd/system/dc.service"
 
 //const serviceConfigFile = "./test/dc.service"
-const startupShell = "/opt/dcnetio/bin/startup.sh"
-const dcBin = "/opt/dcnetio/bin"
+const startupContent = "/opt/dcnetio/bin/dc upgrade daemon"
 const commitPubkeyHex = "0x3d14b9f8765c4c2e0a7b77805ebdad50ffbc74a7ee4aa606399693342a25483b" //技术委员会用于发布dcnode升级版本的pubkey
 
 func ShowHelp() {
 	fmt.Println("dcmanager version ", config.Version)
-	fmt.Println("usage: dc command [options]")
+	fmt.Println("usage: sudo dc command [options]")
 	fmt.Println("command")
 	fmt.Println("")
 	fmt.Println(" start {node|chain|pccs|all}             start service with service_name")
@@ -97,7 +97,7 @@ func ShowHelp() {
 	fmt.Println("                                         \"name\": file to save name")
 	fmt.Println("                                         \"timeout\":  wait seconds for file to complete download")
 	fmt.Println("                                         \"secret\":  file decode secret with base32 encoded")
-	fmt.Println(" rotate-keys	                          upgrade dcnode to newest version that configed on blockchain")
+	fmt.Println(" rotate-keys	                          generate new node session keys")
 }
 
 var log = logging.Logger("dcmanager")
@@ -129,7 +129,6 @@ func StartCommandDeal() {
 
 	case "all":
 		startDcChain()
-		showLogsOnNewWindowForContainer(chainContainerName)
 		err := startDcNode()
 		if err == nil {
 			showContainerLog(nodeContainerName)
@@ -217,7 +216,15 @@ func LogCommandDeal() { //
 func UpgradeCommandDeal() {
 	if len(os.Args) > 2 {
 		if os.Args[2] == "daemon" { //进入守护程序模式，自动下载并更新dcnode,同时设置为开机重启
-			daemonCommandDeal()
+			//fork new process to run in deamon mode
+			if os.Getppid() != 1 {
+				// 将命令行参数中执行文件路径转换成可用路径
+				cmd := exec.Command(os.Args[0], "upgrade", "daemon")
+				cmd.Start() // 开始执行新进程，不等待新进程退出
+				os.Exit(0)
+			} else {
+				daemonCommandDeal()
+			}
 		} else if os.Args[2] == "cancel" { //停止守护程序模式
 			cancelDaemonCommandDeal()
 		} else {
@@ -234,36 +241,47 @@ func UniqueIdCommandDeal() {
 		ShowHelp()
 		return
 	}
-	fmtStr := "dcupgrade version: %s,enclaveid: %s"
+	fmtStr := "dcupgrade version: %s,enclaveid: %s\n"
 	localport := 0
 	switch os.Args[2] {
 	case "node":
 		localport = dcNodeListenPort
-		fmtStr = "dcnode version: %s,enclaveid: %s"
+		//判断dcnode是否在运行
+		nodeStatus, _ := checkDcnodeStatus()
+		if !nodeStatus {
+			fmt.Fprintf(os.Stderr, "dcnode does not run,please start dcnode first\n")
+		}
+		fmtStr = "dcnode version: %s,enclaveid: %s\n"
 	case "upgrade":
 		localport = dcUpgradeListenPort
-		fmtStr = "dcupgrade version: %s,enclaveid: %s"
+		//判断dcupgrade是否在运行
+		upgradeStatus, _ := checkDcDeamonStatusDc()
+		if !upgradeStatus {
+			fmt.Fprintf(os.Stderr, "dcupgrade does not run,please start dcupgrade first\n")
+		}
+		fmtStr = "dcupgrade version: %s,enclaveid: %s\n"
 	default:
 		ShowHelp()
 		return
 	}
 	version, enclaveId, err := getVersionByHttpGet(localport)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "dcnode enclaveid get fail,err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "get version failed:%s", err.Error())
+		return
 	}
-	log.Infof(fmtStr, version, enclaveId)
+	fmt.Printf(fmtStr, version, enclaveId)
 }
 
 //生成文件的hash校验码
 func ChecksumCommandDeal() {
 	if len(os.Args) < 3 {
-		fmt.Println("Usage: dc checksum <file>")
+		fmt.Println("Usage: sudo dc checksum <file>")
 		os.Exit(1)
 	}
 	for _, filename := range os.Args[2:] {
 		checksum, err := util.Sha256sum(filename)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "checksum: %v\r\n", err)
+			fmt.Fprintf(os.Stderr, "checksum: %v\n", err)
 			continue
 		}
 		fmt.Printf("%s\t%s\n", checksum, filename)
@@ -272,7 +290,7 @@ func ChecksumCommandDeal() {
 
 //从dc网络下载文件
 func GetFileFromIpfsCommandDeal() {
-	if len(os.Args) < 4 {
+	if len(os.Args) < 3 {
 		ShowHelp()
 		return
 	}
@@ -289,7 +307,7 @@ func GetFileFromIpfsCommandDeal() {
 	//根据cid从区块链中查询出存在该文件的节点
 	fileSize, addrInfos, err := blockchain.GetPeerAddrsForCid(cid)
 	if err != nil || len(addrInfos) == 0 {
-		log.Infof("can't find any peers store the file with cid: %s ", cid)
+		fmt.Fprintf(os.Stderr, "Failed to get file with cid:%s \n", cid)
 		return
 	}
 	tObj := &util.TransmitObj{
@@ -315,19 +333,20 @@ func RotateKeyCommandDeal() (sessionKey string, err error) {
 	}
 	//make http request to dcchain
 	chainRpcUrl := fmt.Sprintf("http://127.0.0.1:%d", config.RunningConfig.ChainRpcListenPort)
-	postData := `"id":1, "jsonrpc":"2.0", "method": "author_rotateKeys", "params":[]}`
+	postData := `{"id":1, "jsonrpc":"2.0", "method": "author_rotateKeys", "params":[]}`
 	res, err := util.HttpPost(chainRpcUrl, []byte(postData))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "request author_rotateKeys fail,  err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "request author_rotateKeys fail,  err: %v\n", err)
 		return
 	}
 	var sessionKeyRes SessionKeyRes
 	err = json.Unmarshal(res, &sessionKeyRes)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "parse res author_rotateKeys failed,  err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "parse res author_rotateKeys failed,  err: %v\n", err)
 		return
 	}
 	sessionKey = sessionKeyRes.Result
+	fmt.Fprintf(os.Stdout, "session key: %s\n", sessionKey)
 	return
 }
 
@@ -372,72 +391,73 @@ func checkDcDeamonStatusDc() (status bool, err error) {
 	// Look for the dcmanager process.
 	status = false
 	//read content from .dcdaemon
-	content, err := ioutil.ReadFile(".dcdaemon")
+	content, err := ioutil.ReadFile(daemonFilepath)
 	if err != nil {
 		return
 	}
 	//get pid from .dcdaemon
 	pid, err := strconv.Atoi(string(content))
 	if err != nil {
-		log.Errorf("get pid from .dcdaemon file error:%v", err)
+		log.Errorf("get pid from %s  error:%v", daemonFilepath, err)
 		return
 	}
-	//get current process id
-	currentPid := os.Getpid()
-	if pid == currentPid {
-		status = true
+	//check if the pid is running
+	p, err := ps.FindProcess(pid)
+	if err != nil || p == nil {
+		return
 	}
+	status = true
 	return
 }
 
 //后台升级跟踪处理
 func daemonCommandDeal() {
-	_, err := os.Stat(".dcdaemon")
+	_, err := os.Stat(daemonFilepath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			os.Create(".dcdaemon")
+			os.Create(daemonFilepath)
 		} else {
-			fmt.Fprintf(os.Stderr, "check dcmanager daemon status fail,err: %v\r\n", err)
+			fmt.Fprintf(os.Stderr, "check dcmanager daemon status fail,err: %v\n", err)
 			return
 		}
 	}
 	//read content from .dcdaemon
-	content, err := ioutil.ReadFile(".dcdaemon")
+	content, err := ioutil.ReadFile(daemonFilepath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "read .dcdaemon file error:%v\r\n", err)
+		fmt.Fprintf(os.Stderr, "read .dcdaemon file error:%v\n", err)
 		return
 	}
 	//check if the content is empty
 	if len(content) == 0 {
 		//write the current pid to .dcdaemon
-		err = ioutil.WriteFile(".dcdaemon", []byte(strconv.Itoa(os.Getpid())), 0644)
+		err = ioutil.WriteFile(daemonFilepath, []byte(strconv.Itoa(os.Getpid())), 0644)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "write .dcdaemon file error:%v\r\n", err)
+			fmt.Fprintf(os.Stderr, "write .dcdaemon file error:%v\n", err)
 			return
 		}
 	} else {
 		//check if the pid is running
 		pid, err := strconv.Atoi(string(content))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "read .dcdaemon file error:%v\r\n", err)
+			fmt.Fprintf(os.Stderr, "read .dcdaemon file error:%v\n", err)
 			return
 		}
 		//check if the pid is running
-		_, err = os.FindProcess(pid)
-		if err == nil {
-			fmt.Fprintf(os.Stderr, "dcmanager daemon already on running\r\n")
+		p, err := ps.FindProcess(pid)
+		if err == nil && p != nil {
+			fmt.Fprintf(os.Stderr, "dcmanager daemon already on running\n")
 			return
 		}
 		//write the current pid to .dcdaemon
-		err = ioutil.WriteFile(".dcdaemon", []byte(strconv.Itoa(os.Getpid())), 0644)
+		err = ioutil.WriteFile(daemonFilepath, []byte(strconv.Itoa(os.Getpid())), 0644)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "write .dcdaemon file error:%v\r\n", err)
+			fmt.Fprintf(os.Stderr, "write .dcdaemon file error:%v\n", err)
 			return
 		}
 	}
 	flag := configServiceStartup()
 	if !flag {
-		fmt.Fprintf(os.Stderr, "set auto upgrade service to run with startup fail\r\n")
+		fmt.Fprintf(os.Stderr, "set auto upgrade service to run with startup fail\n")
 		return
 	}
 	//start upgrade
@@ -449,7 +469,7 @@ func daemonCommandDeal() {
 		case <-ticker.C:
 			upgradeDeal()
 		case <-quit:
-			os.Remove(".dcdaemon")
+			os.Remove(daemonFilepath)
 			os.Exit(1)
 		}
 	}
@@ -460,47 +480,46 @@ func cancelDaemonCommandDeal() {
 	//remove startup service config
 	flag := removeServiceStartup()
 	if !flag {
-		fmt.Fprintf(os.Stderr, "cancel auto upgrade service to run with startup fail\r\n")
+		fmt.Fprintf(os.Stderr, "cancel auto upgrade service to run with startup fail\n")
 	}
-	_, err := os.Stat(".dcdaemon")
+	_, err := os.Stat(daemonFilepath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "dcmanager daemon is not running\r\n")
+			fmt.Fprintf(os.Stderr, "dcmanager daemon is not running\n")
 			return
 		} else {
-			fmt.Fprintf(os.Stderr, "check dcmanager daemon status fail,err: %v\r\n", err)
+			fmt.Fprintf(os.Stderr, "check dcmanager daemon status fail,err: %v\n", err)
 			return
 		}
 	}
 	//read content from .dcdaemon
-	content, err := ioutil.ReadFile(".dcdaemon")
+	content, err := ioutil.ReadFile(daemonFilepath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "read .dcdaemon file error:%v\r\n", err)
+		fmt.Fprintf(os.Stderr, "read .dcdaemon file error:%v\n", err)
 		return
 	}
 	//check if the content is empty
 	if len(content) == 0 {
-		fmt.Fprintf(os.Stderr, "dcmanager daemon is not running\r\n")
+		fmt.Fprintf(os.Stderr, "dcmanager daemon is not running\n")
 		return
 	} else {
 		//check if the pid is running
 		pid, err := strconv.Atoi(string(content))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "read .dcdaemon file error:%v\r\n", err)
+			fmt.Fprintf(os.Stderr, "read .dcdaemon file error:%v\n", err)
+			return
+		}
+		//check if the pid is running
+		p, err := ps.FindProcess(pid)
+		if err != nil || p == nil {
 			return
 		}
 		//check if the pid is running
 		process, err := os.FindProcess(pid)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "dcmanager daemon is not running\r\n")
-			return
+		if err == nil && process != nil {
+			process.Kill()
 		}
-		err = process.Kill()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "kill dcmanager daemon fail,err: %v\r\n", err)
-			return
-		}
-		os.Remove(".dcdaemon")
+		os.Remove(daemonFilepath)
 	}
 }
 
@@ -702,7 +721,6 @@ func getVersionByHttpGet(localport int) (version string, enclaveId string, err e
 	dcEnclaveIdUrl := fmt.Sprintf("http://127.0.0.1:%d/version", localport)
 	respBody, err := util.HttpGet(dcEnclaveIdUrl)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "request teerandom fail,  err: %v\r\n", err)
 		return
 	}
 	versionInfo := string(respBody)
@@ -726,7 +744,7 @@ func waitDcUpdateGetPeerSecret() (bool, error) {
 		<-ticker.C
 		respBody, err := util.HttpGet(dcSecretFlagUrl)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "waitDcUpdateGetPeerSecret requset fail,  err: %v\r\n", err)
+			fmt.Fprintf(os.Stderr, "waitDcUpdateGetPeerSecret requset fail,  err: %v\n", err)
 			return false, err
 		}
 		flag := string(respBody)
@@ -752,7 +770,7 @@ func waitNewDcGetPeerSecret() (bool, error) {
 		<-ticker.C
 		respBody, err := util.HttpGet(dcSecretFlagUrl)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "waitNewDcGetPeerSecret requset fail,  err: %v\r\n", err)
+			fmt.Fprintf(os.Stderr, "waitNewDcGetPeerSecret requset fail,  err: %v\n", err)
 			return false, err
 		}
 		flag := string(respBody)
@@ -776,14 +794,14 @@ func upgradeDeal() (err error) {
 	//获取当前运行的dcnode的version与enclaveid
 	version, _, err := getVersionByHttpGet(dcNodeListenPort)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "dcnode enclaveid get fail,err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "dcnode enclaveid get fail,err: %v\n", err)
 		log.Errorf("dcnode enclaveid get fail,err: %v", err)
 		return
 	}
 	//获取区块链上配置的最新的version与enclaveid
 	programInfo, err := blockchain.GetConfigedDcNodeInfo()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "get dcnode version info from blockchain fail,err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "get dcnode version info from blockchain fail,err: %v\n", err)
 		log.Errorf("get dcnode version info from blockchain fail,err: %v", err)
 		return
 	}
@@ -796,7 +814,7 @@ func upgradeDeal() (err error) {
 	}
 	cpubkey, err := crypto.UnmarshalEd25519PublicKey(commitPubkeyHexBytes)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "client request secret fail, err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "client request secret fail, err: %v\n", err)
 		log.Errorf("client request secret fail, err: %v\n", err)
 		return
 	}
@@ -816,24 +834,24 @@ func upgradeDeal() (err error) {
 	//比较版本号新旧，确定是否需要升级
 	localVersion, err := goversion.NewVersion(version)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "invalid local version format,err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "invalid local version format,err: %v\n", err)
 		log.Errorf("invalid local version format,err: %v", err)
 		return
 	}
 	configedVersion, err := goversion.NewVersion(programInfo.Version)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "invalid new version format,err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "invalid new version format,err: %v\n", err)
 		log.Errorf("invalid new version format,err: %v", err)
 		return
 	}
 	if !localVersion.LessThan(configedVersion) { //本地版本更新，不更新
-		fmt.Fprintf(os.Stdout, "unneed upgrade ,dcnode localVersion: %s,   configedVersion: %s\r\n", localVersion, configedVersion)
+		fmt.Fprintf(os.Stdout, "unneed upgrade ,dcnode localVersion: %s,   configedVersion: %s\n", localVersion, configedVersion)
 		return
 	}
 	//拉取新版本的dcnode程序image
 	err = pullDcNodeImage(programInfo.Url)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "pull new version dcnode image fail, err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "pull new version dcnode image fail, err: %v\n", err)
 		log.Errorf("pull new version dcnode image fail, err: %v", err)
 		return
 	}
@@ -845,7 +863,7 @@ func upgradeDeal() (err error) {
 	//等待dcupdate成功获取节点密钥
 	_, err = waitDcUpdateGetPeerSecret()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "update fail,err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "update fail,err: %v\n", err)
 		log.Errorf("update fail,err: %v", err)
 		return
 	}
@@ -869,7 +887,7 @@ func upgradeDeal() (err error) {
 	//等待新版本的dcnode成功获取节点密钥
 	_, err = waitNewDcGetPeerSecret()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "update fail,err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "update fail,err: %v\n", err)
 		log.Errorf("update fail,err: %v", err)
 		return
 	}
@@ -879,29 +897,29 @@ func upgradeDeal() (err error) {
 	config.RunningConfig.NodeImage = programInfo.Url
 	//保存配置文件
 	if err = config.SaveConfig(config.RunningConfig); err != nil {
-		fmt.Fprintf(os.Stderr, "save config fail,err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "save config fail,err: %v\n", err)
 		log.Errorf("save config fail,err: %v", err)
 		return
 	}
 	//通过检查version来判断新版本程序是否正常运行
 	version, enclaveId, err := getVersionByHttpGet(dcNodeListenPort)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "dcnode enclaveid get fail,err: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "dcnode enclaveid get fail,err: %v\n", err)
 		log.Errorf("dcnode enclaveid get fail,err: %v", err)
 		return
 	}
 	if version != programInfo.Version {
-		fmt.Fprintf(os.Stderr, "dcnode version check fail,version: %s, configedVersion: %s\r\n", version, programInfo.Version)
+		fmt.Fprintf(os.Stderr, "dcnode version check fail,version: %s, configedVersion: %s\n", version, programInfo.Version)
 		log.Errorf("dcnode version check fail,version: %s, configedVersion: %s", version, programInfo.Version)
 		return
 	}
 	if enclaveId != programInfo.EnclaveId {
-		fmt.Fprintf(os.Stderr, "dcnode enclaveid check fail,enclaveId: %s, configedEnclaveId: %s\r\n", enclaveId, programInfo.EnclaveId)
+		fmt.Fprintf(os.Stderr, "dcnode enclaveid check fail,enclaveId: %s, configedEnclaveId: %s\n", enclaveId, programInfo.EnclaveId)
 		log.Errorf("dcnode enclaveid check fail,enclaveId: %s, configedEnclaveId: %s", enclaveId, programInfo.EnclaveId)
 		return
 	}
 	log.Infof("dcnode upgrade success,version: %s,enclaveid: %s", version, enclaveId)
-	fmt.Fprintf(os.Stdout, "dcnode upgrade success,version: %s,enclaveid: %s\r\n", version, enclaveId)
+	fmt.Fprintf(os.Stdout, "dcnode upgrade success,version: %s,enclaveid: %s\n", version, enclaveId)
 	return
 }
 
@@ -943,7 +961,7 @@ func removeDcnodeInDocker() (err error) {
 	for _, container := range containers {
 		if container.Image == config.RunningConfig.NodeImage {
 			log.Infof("begin to remove old version dcnode docker container,container id: %s", container.ID)
-			fmt.Printf("begin to remove old version dcnode docker container,container id: %s\r\n", container.ID)
+			fmt.Printf("begin to remove old version dcnode docker container,container id: %s\n", container.ID)
 			err = cli.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{Force: true})
 			if err != nil {
 				continue
@@ -1012,90 +1030,68 @@ func ifStartupConfiged() bool {
 		return false
 	}
 	//获取当前目录
-	return v == startupShell
+	return v == startupContent
 }
 
 //判断开机启动是否已经配置
 func ifServiceStartupConfiged() bool {
-	if !ifStartupConfiged() {
-		return false
-	}
-	servicePath := dcBin + "/dc upgrade auto &"
-	//读取startup.sh中的指令，
-	file, err := os.Open(startupShell)
-	if err != nil {
-		log.Fatal(err)
-		return false
-	}
-	defer file.Close()
-	space := regexp.MustCompile(`\s+`)
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-	for scanner.Scan() {
-		s := space.ReplaceAllString(scanner.Text(), " ")
-		s = strings.TrimSpace(s)
-		if s == servicePath {
-			return true
-		}
-	}
-	return false
+	return ifStartupConfiged()
 }
 
 //为服务配置开机启动
 func configServiceStartup() bool {
 	if !ifStartupConfiged() { //服务没生成，需要进行生成操作
-		out, err := os.Create(serviceConfigFile)
+		serviceFile, err := os.OpenFile(serviceConfigFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			log.Fatal(err)
 			return false
 		}
-		defer out.Close()
-		w := bufio.NewWriter(out) //创建新的 Writer 对象
-		_, err = w.Write([]byte(serviceConfigFileContent))
+		defer serviceFile.Close()
+		if _, err = serviceFile.WriteString(serviceConfigFileContent); err != nil {
+			log.Fatal(err)
+			return false
+		}
+		//reload配置
+		cmd := exec.Command("systemctl", "daemon-reload")
+		err = cmd.Run()
+		if err != nil {
+			log.Fatal(err)
+			return false
+		}
+		//配置开机启动
+		cmd = exec.Command("systemctl", "enable", "dc.service")
+		err = cmd.Run()
 		if err != nil {
 			log.Fatal(err)
 			return false
 		}
 	}
-	if ifServiceStartupConfiged() {
-		return true
-	}
-	//未配置重启服务，进行追加
-	servicePath := dcBin + "/dc upgrade daemon &"
-	file, err := os.OpenFile(startupShell, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		log.Fatal(err)
-		return false
-	}
-	defer file.Close()
-
-	if _, err = file.WriteString(servicePath + "\r\n"); err != nil {
-		log.Fatal(err)
-		return false
-	}
-	return true
+	return ifServiceStartupConfiged()
 }
 
-//为某一个服务移除开机启动
+//移除开机启动
 func removeServiceStartup() bool {
-	if !ifStartupConfiged() { //服务没生成，直接返回true
-		return true
-	}
 	if !ifServiceStartupConfiged() { //原来就没有配置
 		return true
 	}
-	//逐行读取startup.sh中的指令，
-	file, err := os.Open(startupShell)
+	//stop dc service with cmd
+	cmd := exec.Command("service", "dc", "stop")
+	err := cmd.Run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "stop dc service fail,err: %v\r", err)
+	}
+	//删除服务配置文件
+	err = os.Remove(serviceConfigFile)
 	if err != nil {
 		log.Fatal(err)
 		return false
 	}
-	defer file.Close()
-	content := ""
-	if _, err = file.WriteString(content); err != nil {
-		log.Fatal(err)
-		return false
-	}
+	//reload配置
+	cmd = exec.Command("systemctl", "daemon-reload")
+	cmd.Run()
+	//移除开机启动
+	cmd = exec.Command("systemctl", "disable", "dc.service")
+	cmd.Run()
 	return true
 }
 
@@ -1151,36 +1147,14 @@ func runPccsInDocker() (err error) {
 func showContainerLog(containerName string) {
 	containerId, err := findContainerIdByName(containerName)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "find container id error: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "find container id error: %v\n", err)
 		return
 	}
 	err = showLogsForContainer(containerId)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "show logs error: %v\r\n", err)
+		fmt.Fprintf(os.Stderr, "show logs error: %v\n", err)
 		return
 	}
-}
-
-//show container logs in new window
-func showLogsOnNewWindowForContainer(containerId string) (err error) {
-	cli, _ := client.NewClientWithOpts(client.FromEnv)
-	reader, err := cli.ContainerLogs(context.Background(), containerId, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true, Tail: "100"})
-	if err != nil {
-		return
-	}
-	defer cli.Close()
-	defer reader.Close()
-	//创建一个新的窗口
-	cmd := exec.Command("cmd", "/c", "start", "docker logs")
-	cmd.Stdin = reader
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		return err
-	}
-	handleInterruptSignal()
-	return
 }
 
 //打印docker中指定容器ID的日志
