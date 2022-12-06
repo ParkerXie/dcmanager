@@ -87,16 +87,16 @@ func ShowHelp() {
 	fmt.Println("                                         \"upgrade\":  show dcupgrade container running log")
 	fmt.Println("                                         \"pccs\":  show local pccs  running log")
 	fmt.Println(" upgrade [options]                       upgrade dcnode to newest version that configed on blockchain")
-	fmt.Println("                                         (options: \"daemon\"|\"cancel\"")
+	fmt.Println("                                         \"options\": \"daemon\"|\"cancel\"")
 	fmt.Println("                                         \"daemon\": dcmanager will run in deamon mode,and auto updrage dcnode ")
 	fmt.Println("                                         \"cancel\": cancel dcmanager deamon mode")
 	fmt.Println("                                         when a new dcnode version configed on blockchain")
 	fmt.Println(" uniqueid  {node|upgrade}                show soft version and sgx enclaveid ")
 	fmt.Println(" checksum  filepath                      generate  sha256 checksum for file in the \"filepath\"")
 	fmt.Println(" get cid [--name][--timeout][--secret]   get file from dc net with \"cid\" ")
-	fmt.Println("                                         \"name\": file to save name")
-	fmt.Println("                                         \"timeout\":  wait seconds for file to complete download")
-	fmt.Println("                                         \"secret\":  file decode secret with base32 encoded")
+	fmt.Println("                                         \"--name\": file to save name")
+	fmt.Println("                                         \"--timeout\":  wait seconds for file to complete download")
+	fmt.Println("                                         \"--secret\":  file decode secret with base32 encoded")
 	fmt.Println(" rotate-keys	                          generate new node session keys")
 }
 
@@ -1135,7 +1135,7 @@ func runPccsInDocker() (err error) {
 		startFlag := false
 		//wait for pccs to start
 		for i := 0; i < 10; i++ {
-			_, gerr := util.HttpGet("https://localhost:8081/sgx/certification/v3/rootcacrl")
+			_, gerr := util.HttpGetWithoutCheckCert("https://localhost:8081/sgx/certification/v3/rootcacrl")
 			if gerr == nil {
 				startFlag = true
 				break
