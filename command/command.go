@@ -1132,12 +1132,18 @@ func runPccsInDocker() (err error) {
 	err = util.StartContainer(ctx, pccsContainerName, true, cConfig, hostConfig)
 	//check if pccs is running
 	if err == nil {
+		startFlag := false
 		//wait for pccs to start
-		time.Sleep(5 * time.Second)
-		_, gerr := util.HttpGetWithoutCheckCert("https://localhost:8081/sgx/certification/v3/rootcacrl")
-		if gerr != nil {
-			log.Errorf("pccs start with err: %v", gerr)
-			return gerr
+		for i := 0; i < 10; i++ {
+			_, gerr := util.HttpGet("https://localhost:8081/sgx/certification/v3/rootcacrl")
+			if gerr == nil {
+				startFlag = true
+				break
+			}
+			time.Sleep(2 * time.Second)
+		}
+		if !startFlag {
+			err = fmt.Errorf("pccs start fail")
 		}
 	}
 	return

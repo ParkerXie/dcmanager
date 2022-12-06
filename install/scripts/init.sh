@@ -110,8 +110,10 @@ function install_sgx_env(){
         if [ $? -ne 0 ]; then
             echo -e ${RED} "2.0  install sgx_linux_x64_driver_1.41.bin failed" ${NC}  && exit 
         fi
+        sudo rm -rf sgx_linux_x64_driver_1.41.bin
+
     else
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.0  ******* sgx_driver aleady installed ********' ${NC}
+        echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.0  ******* sgx_driver aleady installed ********' ${NC}
     fi
 
     ## 2.1 queto provider安装
@@ -131,6 +133,8 @@ function install_sgx_env(){
     if [ $? -ne 0 ]; then
         echo -e ${RED} "apt-get update failed" ${NC}  && exit 
     fi
+    sudo rm -rf intel-sgx-deb.key
+    sudo apt-get install -y  libsgx-enclave-common libsgx-dcap-ql 
     ## 2.2 libsgx-dcap-default-qpl 安装
     echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  2.2   download and  install libsgx-dcap-default-qpl' ${NC}
     sudo apt-get install libsgx-dcap-default-qpl 

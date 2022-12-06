@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/bin/bash
 # complete dc
 _dc()
 {

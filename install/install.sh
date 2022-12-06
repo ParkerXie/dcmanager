@@ -90,6 +90,8 @@ fi
 install_sgx_env
 #set command completion
 sudo cp $installetcdir/dc.bash_completion /etc/bash_completion.d/dc
+sudo chmod +x /etc/bash_completion.d/dc
+source /etc/bash_completion.d/dc
 ENDTIME=$(date "+%Y-%m-%d %H:%M:%S")
 echo $ENDTIME '>>  end dc  node install...'
 start_seconds=$(date --date="$BEGINTIME" +%s);
