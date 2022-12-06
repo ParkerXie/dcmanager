@@ -38,6 +38,7 @@ while true ; do
             help
             break ;;
         *)
+            echo -e ${GREEN} "如果安装速度很慢，尝试使用 'sudo ./install.sh --registry cn' 命令来加快安装速度" ${NC}
             break;
             ;;
     esac
@@ -87,7 +88,8 @@ else
     install_docker_images  $installetcdir
 fi
 install_sgx_env
-
+#set command completion
+sudo cp $installetcdir/dc.bash_completion /etc/bash_completion.d/dc
 ENDTIME=$(date "+%Y-%m-%d %H:%M:%S")
 echo $ENDTIME '>>  end dc  node install...'
 start_seconds=$(date --date="$BEGINTIME" +%s);
