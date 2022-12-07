@@ -28,7 +28,7 @@ sudo ./install.sh # Use 'sudo ./install.sh --registry cn' to accelerate installa
 
 - Please make sure the following ports are not occupied before starting：
   - 30334 9933 9944 (for dcchain)
-  - 4006 6667 (for dcnode)
+  - 4006 6667 (for dcstorage)
   - 6666 (for dcupdate)
 
 ```shell

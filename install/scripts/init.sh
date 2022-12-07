@@ -299,15 +299,15 @@ function install_docker_images(){
     fi
     sudo sed -i "s/upgradeImage:.*/upgradeImage: ghcr.io\/dcnetio\/dcupgrade:${newest_docker_tag}/" $1/manage_config.yaml
     echo
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.9   get dcnetio/dcnode newest tag' ${NC}
-    get_docker_newesttag_list dcnetio/dcnode
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  5.0   pull image from ghcr.io/dcnetio/dcnode:${newest_docker_tag}" ${NC}
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.9   get dcnetio/dcstorage newest tag' ${NC}
+    get_docker_newesttag_list dcnetio/dcstorage
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  5.0   pull image from ghcr.io/dcnetio/dcstorage:${newest_docker_tag}" ${NC}
     echo
-    docker pull ghcr.io/dcnetio/dcnode:$newest_docker_tag
+    docker pull ghcr.io/dcnetio/dcstorage:$newest_docker_tag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.3   pull image from ghcr.io/dcnetio/dcnode failed" ${NC}  && exit 
+        echo -e ${RED} "4.3   pull image from ghcr.io/dcnetio/dcstorage failed" ${NC}  && exit 
     fi
-    sudo sed -i "s/nodeImage:.*/nodeImage: ghcr.io\/dcnetio\/dcnode:${newest_docker_tag}/" $1/manage_config.yaml
+    sudo sed -i "s/nodeImage:.*/nodeImage: ghcr.io\/dcnetio\/dcstorage:${newest_docker_tag}/" $1/manage_config.yaml
     echo
 
 }
@@ -345,15 +345,15 @@ function install_docker_images_cn(){
     fi
     sudo sed -i "s/upgradeImage:.*/upgradeImage: ghcr.nju.edu.cn\/dcnetio\/dcupgrade:${newest_docker_tag}/" $1/manage_config.yaml
     echo
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.9   get dcnetio/dcnode newest tag' ${NC}
-    get_docker_newesttag_list dcnetio/dcnode
-    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  5.0   pull image from ghcr.nju.edu.cn/dcnetio/dcnode:${newest_docker_tag}" ${NC}
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') '>>  4.9   get dcnetio/dcstorage newest tag' ${NC}
+    get_docker_newesttag_list dcnetio/dcstorage
+    echo -e ${GREEN} $(date '+%Y-%m-%d %H:%M:%S') ">>  5.0   pull image from ghcr.nju.edu.cn/dcnetio/dcstorage:${newest_docker_tag}" ${NC}
     echo
-    docker pull ghcr.nju.edu.cn/dcnetio/dcnode:$newest_docker_tag
+    docker pull ghcr.nju.edu.cn/dcnetio/dcstorage:$newest_docker_tag
     if [ $? -ne 0 ]; then
-        echo -e ${RED} "4.3   pull image from ghcr.nju.edu.cn/dcnetio/dcnode failed" ${NC}  && exit 
+        echo -e ${RED} "4.3   pull image from ghcr.nju.edu.cn/dcnetio/dcstorage failed" ${NC}  && exit 
     fi
-    sudo sed -i "s/nodeImage:.*/nodeImage: ghcr.nju.edu.cn\/dcnetio\/dcnode:${newest_docker_tag}/" $1/manage_config.yaml
+    sudo sed -i "s/nodeImage:.*/nodeImage: ghcr.nju.edu.cn\/dcnetio\/dcstorage:${newest_docker_tag}/" $1/manage_config.yaml
     echo
 
 }

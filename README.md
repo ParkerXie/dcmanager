@@ -13,7 +13,7 @@ Official dc node service for running dc protocol.
 - Other configurations
 
   - **Secure Boot** in BIOS needs to be turned off
-  - If need to run dcnode,you should register with [Intel](https://api.portal.trustedservices.intel.com/provisioning-certification)(Click on 'Subscribe' in the page) to get a PCCS API key.
+  - If need to run dcstorage,you should register with [Intel](https://api.portal.trustedservices.intel.com/provisioning-certification)(Click on 'Subscribe' in the page) to get a PCCS API key.
 
 ## Install dependencies
 
@@ -23,13 +23,13 @@ sudo ./install.sh # Use 'sudo ./install.sh --registry cn' to accelerate installa
 ```
 
 ### Config service
-If need to run dcnode,you should update the config file "/opt/dcnetio/etc/manage_config.yaml",and set pccsKey value with PCCS API key you subscribe from intel.
+If need to run dcstorage,you should update the config file "/opt/dcnetio/etc/manage_config.yaml",and set pccsKey value with PCCS API key you subscribe from intel.
 
 ### Run service
 
 - Please make sure the following ports are not occupied before starting：
   - 9933  9944 30333 9615 (for dcchain)
-  - 6667 4006 (for dcnode)
+  - 6667 4006 (for dcstorage)
   - 6666  (for dcupgrade)
   - 8081  (for PCCS)
 

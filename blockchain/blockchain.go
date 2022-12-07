@@ -68,7 +68,7 @@ type BlockPeerInfo struct { //节点信息
 }
 
 //从区块链获取最新版本的dc节点程序的信息
-func GetConfigedDcNodeInfo() (dcProgram *DcProgram, err error) {
+func GetConfigedDcStorageInfo() (dcProgram *DcProgram, err error) {
 	//随机选择要连接的区块链代理
 	var chainApi *gsrpc.SubstrateAPI
 	var meta *types.Metadata
@@ -93,7 +93,7 @@ func GetConfigedDcNodeInfo() (dcProgram *DcProgram, err error) {
 
 //获取当前区块链上的程序版本信息
 func getProgramInfo(chainApi *gsrpc.SubstrateAPI, meta *types.Metadata) (*DcProgram, error) {
-	key, err := types.CreateStorageKey(meta, "DcNode", "Program")
+	key, err := types.CreateStorageKey(meta, "DcStorage", "Program")
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func getPeerAddrsForCid(sCid string, chainApi *gsrpc.SubstrateAPI, meta *types.M
 		return 0, nil, fmt.Errorf("invalid key")
 	}
 	fileIdBytes, _ := codec.Encode([]byte(sCid))
-	key, err := types.CreateStorageKey(meta, "DcNode", "Files", fileIdBytes)
+	key, err := types.CreateStorageKey(meta, "DcStorage", "Files", fileIdBytes)
 	if err != nil {
 		return
 	}
@@ -199,7 +199,7 @@ func getPeerAddrsForCid(sCid string, chainApi *gsrpc.SubstrateAPI, meta *types.M
 func GetPeerAddrInfo(peerid string, chainApi *gsrpc.SubstrateAPI, meta *types.Metadata) (addrInfo peer.AddrInfo, err error) {
 	peerIdBytes, _ := codec.Encode([]byte(peerid))
 	// //根据pubkey 取出节点信息
-	key, err := types.CreateStorageKey(meta, "DcNode", "Peers", peerIdBytes)
+	key, err := types.CreateStorageKey(meta, "DcStorage", "Peers", peerIdBytes)
 	if err != nil {
 		return
 	}

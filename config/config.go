@@ -20,7 +20,7 @@ var RunningConfig = &DcManageConfig{
 	ChainRpcListenPort: 9933,
 	PccsKey:            "", //intel pccs服务的订阅key
 	ChainImage:         "ghcr.io/dcnetio/dcchain:latest",
-	NodeImage:          "ghcr.io/dcnetio/dcnode:latest",
+	NodeImage:          "ghcr.io/dcnetio/dcstorage:latest",
 	UpgradeImage:       "ghcr.io/dcnetio/dcupgrade:latest",
 	PccsImage:          "ghcr.io/dcnetio/pccs:latest",
 }

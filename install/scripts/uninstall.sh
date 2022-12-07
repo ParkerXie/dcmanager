@@ -10,16 +10,16 @@ if [  -d $installdir ]; then
     echo "Stopping dc..."
     $installdir/bin/dc stop all
     echo "Removing dc..."
-    #remove  container name with dcnode
-    docker ps -a | grep dcnode | awk '{print $1}' | xargs docker rm -f
+    #remove  container name with dcstorage
+    docker ps -a | grep dcstorage | awk '{print $1}' | xargs docker rm -f
     #remove  container name with dcupdate
     docker ps -a | grep dcupdate | awk '{print $1}' | xargs docker rm -f
     #remove  container name with dcchain
     docker ps -a | grep dcchain | awk '{print $1}' | xargs docker rm -f
     #remove  container name with dcpccs
     docker ps -a | grep dcpccs | awk '{print $1}' | xargs docker rm -f
-    #remove  image tag with ghcr.io/dcnetio/dcnode
-    docker images | grep dcnetio/dcnode | awk '{print $3}' | xargs docker rmi -f
+    #remove  image tag with ghcr.io/dcnetio/dcstorage
+    docker images | grep dcnetio/dcstorage | awk '{print $3}' | xargs docker rmi -f
     #remove  image tag with ghcr.io/dcnetio/dcupdate
     docker images | grep dcnetio/dcupdate | awk '{print $3}' | xargs docker rmi -f
     #remove  image tag with ghcr.io/dcnetio/dcchain

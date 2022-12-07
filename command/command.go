@@ -32,14 +32,14 @@ import (
 	"github.com/mitchellh/go-ps"
 )
 
-const dcNodeListenPort = 6667
+const dcstorageListenPort = 6667
 const dcUpgradeListenPort = 6666
 
-const nodeContainerName = "dcnode"
+const nodeContainerName = "dcstorage"
 const chainContainerName = "dcchain"
 const upgradeContainerName = "dcupgrade"
 const pccsContainerName = "dcpccs"
-const nodeVolueName = "dcnode"
+const nodeVolueName = "dcstorage"
 const chainVolueName = "dcchain"
 const upgradeVolueName = "upgradeVolueName"
 const pccsVolueName = "dcpccs"
@@ -60,44 +60,44 @@ const serviceConfigFile = "/etc/systemd/system/dc.service"
 
 //const serviceConfigFile = "./test/dc.service"
 const startupContent = "/opt/dcnetio/bin/dc upgrade daemon"
-const commitPubkeyHex = "0x3d14b9f8765c4c2e0a7b77805ebdad50ffbc74a7ee4aa606399693342a25483b" //技术委员会用于发布dcnode升级版本的pubkey
+const commitPubkeyHex = "0x3d14b9f8765c4c2e0a7b77805ebdad50ffbc74a7ee4aa606399693342a25483b" //技术委员会用于发布dcstorage升级版本的pubkey
 
 func ShowHelp() {
 	fmt.Println("dcmanager version ", config.Version)
 	fmt.Println("usage: sudo dc command [options]")
 	fmt.Println("command")
 	fmt.Println("")
-	fmt.Println(" start {node|chain|pccs|all}             start service with service_name")
-	fmt.Println("                                         \"node\": start dcnode service")
+	fmt.Println(" start {storage|chain|pccs|all}             start service with service_name")
+	fmt.Println("                                         \"storage\": start dcstorage service")
 	fmt.Println("                                         \"chain\": start dcchain service")
 	fmt.Println("                                         \"pccs\": start local pccs service")
-	fmt.Println("                                         \"all\": start dcnode and dcchain service")
-	fmt.Println(" stop {node|chain|pccs|all}              stop service  with service_name")
-	fmt.Println("                                         \"node\": stop dcnode service")
+	fmt.Println("                                         \"all\": start dcstorage and dcchain service")
+	fmt.Println(" stop {storage|chain|pccs|all}              stop service  with service_name")
+	fmt.Println("                                         \"storage\": stop dcstorage service")
 	fmt.Println("                                         \"chain\": stop dcchain service")
 	fmt.Println("                                         \"pccs\": stop local pccs service")
-	fmt.Println("                                         \"all\": stop dcnode and dcchain service")
-	fmt.Println(" status {node|chain|all}                 check dc daemon status and  service status")
-	fmt.Println("                                         \"node\": stop dcnode service")
+	fmt.Println("                                         \"all\": stop dcstorage and dcchain service")
+	fmt.Println(" status {storage|chain|all}                 check dc daemon status and  service status")
+	fmt.Println("                                         \"storage\": stop dcstorage service")
 	fmt.Println("                                         \"chain\": stop dcchain service")
-	fmt.Println("                                         \"all\": stop dcnode and dcchain service")
-	fmt.Println(" log  {node|chain|upgrade|pccs}          show running log with service_name")
-	fmt.Println("                                         \"node\":  show dcnode container running log")
+	fmt.Println("                                         \"all\": stop dcstorage and dcchain service")
+	fmt.Println(" log  {storage|chain|upgrade|pccs}          show running log with service_name")
+	fmt.Println("                                         \"storage\":  show dcstorage container running log")
 	fmt.Println("                                         \"chain\":  show dcchain container running log")
 	fmt.Println("                                         \"upgrade\":  show dcupgrade container running log")
 	fmt.Println("                                         \"pccs\":  show local pccs  running log")
-	fmt.Println(" upgrade [options]                       upgrade dcnode to newest version that configed on blockchain")
+	fmt.Println(" upgrade [options]                       upgrade dcstorage to newest version that configed on blockchain")
 	fmt.Println("                                         \"options\": \"daemon\"|\"cancel\"")
-	fmt.Println("                                         \"daemon\": dcmanager will run in deamon mode,and auto updrage dcnode ")
+	fmt.Println("                                         \"daemon\": dcmanager will run in deamon mode,and auto updrage dcstorage ")
 	fmt.Println("                                         \"cancel\": cancel dcmanager deamon mode")
-	fmt.Println("                                         when a new dcnode version configed on blockchain")
-	fmt.Println(" uniqueid  {node|upgrade}                show soft version and sgx enclaveid ")
+	fmt.Println("                                         when a new dcstorage version configed on blockchain")
+	fmt.Println(" uniqueid  {storage|upgrade}                show soft version and sgx enclaveid ")
 	fmt.Println(" checksum  filepath                      generate  sha256 checksum for file in the \"filepath\"")
 	fmt.Println(" get cid [--name][--timeout][--secret]   get file from dc net with \"cid\" ")
 	fmt.Println("                                         \"--name\": file to save name")
 	fmt.Println("                                         \"--timeout\":  wait seconds for file to complete download")
 	fmt.Println("                                         \"--secret\":  file decode secret with base32 encoded")
-	fmt.Println(" rotate-keys	                          generate new node session keys")
+	fmt.Println(" rotate-keys	                          generate new storage session keys")
 }
 
 var log = logging.Logger("dcmanager")
@@ -109,7 +109,7 @@ func StartCommandDeal() {
 	}
 	switch os.Args[2] {
 	case "node":
-		err := startDcNode()
+		err := startDcStorageNode()
 		if err == nil {
 			showContainerLog(nodeContainerName)
 		} else {
@@ -129,7 +129,7 @@ func StartCommandDeal() {
 
 	case "all":
 		startDcChain()
-		err := startDcNode()
+		err := startDcStorageNode()
 		if err == nil {
 			showContainerLog(nodeContainerName)
 		} else {
@@ -178,13 +178,13 @@ func StatusCommandDeal() {
 	switch secondArgs {
 	case "node":
 		nodeStatus, _ := checkDcnodeStatus()
-		fmt.Println("dcnode status:", nodeStatus)
+		fmt.Println("dcstorage status:", nodeStatus)
 	case "chain":
 		chainStatus, _ := checkDcchainStatus()
 		fmt.Println("dcchain status:", chainStatus)
 	case "all":
 		nodeStatus, _ := checkDcnodeStatus()
-		fmt.Println("dcnode status:", nodeStatus)
+		fmt.Println("dcstorage status:", nodeStatus)
 		chainStatus, _ := checkDcchainStatus()
 		fmt.Println("dcchain status:", chainStatus)
 	default:
@@ -215,7 +215,7 @@ func LogCommandDeal() { //
 //升级指令处理
 func UpgradeCommandDeal() {
 	if len(os.Args) > 2 {
-		if os.Args[2] == "daemon" { //进入守护程序模式，自动下载并更新dcnode,同时设置为开机重启
+		if os.Args[2] == "daemon" { //进入守护程序模式，自动下载并更新dcstorage,同时设置为开机重启
 			//fork new process to run in deamon mode
 			if os.Getppid() != 1 {
 				// 将命令行参数中执行文件路径转换成可用路径
@@ -245,13 +245,13 @@ func UniqueIdCommandDeal() {
 	localport := 0
 	switch os.Args[2] {
 	case "node":
-		localport = dcNodeListenPort
-		//判断dcnode是否在运行
+		localport = dcstorageListenPort
+		//判断dcstorage是否在运行
 		nodeStatus, _ := checkDcnodeStatus()
 		if !nodeStatus {
-			fmt.Fprintf(os.Stderr, "dcnode does not run,please start dcnode first\n")
+			fmt.Fprintf(os.Stderr, "dcstorage does not run,please start dcstorage first\n")
 		}
-		fmtStr = "dcnode version: %s,enclaveid: %s\n"
+		fmtStr = "dcstorage version: %s,enclaveid: %s\n"
 	case "upgrade":
 		localport = dcUpgradeListenPort
 		//判断dcupgrade是否在运行
@@ -350,7 +350,7 @@ func RotateKeyCommandDeal() (sessionKey string, err error) {
 	return
 }
 
-//获取dcnode的运行状态
+//获取dcstorage的运行状态
 func checkDcnodeStatus() (status bool, err error) {
 	status = false
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -358,7 +358,7 @@ func checkDcnodeStatus() (status bool, err error) {
 		return
 	}
 	defer cli.Close()
-	//查看dcnode容器是否存在
+	//查看dcstorage容器是否存在
 	resp, err := cli.ContainerInspect(context.Background(), nodeContainerName)
 	if err != nil {
 		return
@@ -523,13 +523,13 @@ func cancelDaemonCommandDeal() {
 	}
 }
 
-func startDcNode() (err error) {
+func startDcStorageNode() (err error) {
 	//判断pccs（docker）是否已经运行，没有运行，需要先运行
 	err = runPccsInDocker()
 	if err != nil {
 		return
 	}
-	//判断dcnode是否已经运行，没有运行，需要先运行
+	//判断dcstorage是否已经运行，没有运行，需要先运行
 	err = startDcnodeInDocker()
 	return
 }
@@ -538,7 +538,7 @@ func startDcChain() error {
 	return startDcchainInDocker()
 }
 
-//start dcnode in docker
+//start dcstorage in docker
 func startDcnodeInDocker() (err error) {
 	ctx := context.Background()
 	_, err = util.CreateVolume(ctx, nodeVolueName)
@@ -695,7 +695,7 @@ func startDcupgradeInDocker() (err error) {
 	return
 }
 
-//stop dcnode in docker
+//stop dcstorage in docker
 func stopDcnodeInDocker() (err error) {
 	ctx := context.Background()
 	err = util.StopContainer(ctx, nodeContainerName)
@@ -716,7 +716,7 @@ func stopPccsInDocker() {
 
 }
 
-//利用dcnode以及dcupdate程序提供本地随机数查询服务，获取它们对应的enclavid
+//利用dcstorage以及dcupdate程序提供本地随机数查询服务，获取它们对应的enclavid
 func getVersionByHttpGet(localport int) (version string, enclaveId string, err error) {
 	dcEnclaveIdUrl := fmt.Sprintf("http://127.0.0.1:%d/version", localport)
 	respBody, err := util.HttpGet(dcEnclaveIdUrl)
@@ -735,7 +735,7 @@ func getVersionByHttpGet(localport int) (version string, enclaveId string, err e
 
 }
 
-//升级过程，等待dcupdate从dcnode获取节点密钥
+//升级过程，等待dcupdate从dcstorage获取节点密钥
 func waitDcUpdateGetPeerSecret() (bool, error) {
 	dcSecretFlagUrl := fmt.Sprintf("http://127.0.0.1:%d/secretflag", dcUpgradeListenPort)
 	ticker := time.NewTicker(time.Second)
@@ -761,7 +761,7 @@ func waitDcUpdateGetPeerSecret() (bool, error) {
 
 }
 
-//升级过程，等待新版本dcnode从dcupdate取走密钥
+//升级过程，等待新版本dcstorage从dcupdate取走密钥
 func waitNewDcGetPeerSecret() (bool, error) {
 	dcSecretFlagUrl := fmt.Sprintf("http://127.0.0.1:%d/upgradeflag", dcUpgradeListenPort)
 	ticker := time.NewTicker(time.Second)
@@ -779,7 +779,7 @@ func waitNewDcGetPeerSecret() (bool, error) {
 		} else {
 			count++
 			if count > 600 { //等待10分钟
-				return false, fmt.Errorf("new version dcnode get peer secret timeout")
+				return false, fmt.Errorf("new version dcstorage get peer secret timeout")
 			}
 			continue
 		}
@@ -787,22 +787,22 @@ func waitNewDcGetPeerSecret() (bool, error) {
 
 }
 
-//dcnode 程序升级处理
+//dcstorage 程序升级处理
 func upgradeDeal() (err error) {
-	//判断当前dcnode是否在运行，如果没有运行，则启动dcnode
-	startDcNode()
-	//获取当前运行的dcnode的version与enclaveid
-	version, _, err := getVersionByHttpGet(dcNodeListenPort)
+	//判断当前dcstorage是否在运行，如果没有运行，则启动dcstorage
+	startDcStorageNode()
+	//获取当前运行的dcstorage的version与enclaveid
+	version, _, err := getVersionByHttpGet(dcstorageListenPort)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "dcnode enclaveid get fail,err: %v\n", err)
-		log.Errorf("dcnode enclaveid get fail,err: %v", err)
+		fmt.Fprintf(os.Stderr, "dcstorage enclaveid get fail,err: %v\n", err)
+		log.Errorf("dcstorage enclaveid get fail,err: %v", err)
 		return
 	}
 	//获取区块链上配置的最新的version与enclaveid
-	programInfo, err := blockchain.GetConfigedDcNodeInfo()
+	programInfo, err := blockchain.GetConfigedDcStorageInfo()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "get dcnode version info from blockchain fail,err: %v\n", err)
-		log.Errorf("get dcnode version info from blockchain fail,err: %v", err)
+		fmt.Fprintf(os.Stderr, "get dcstorage version info from blockchain fail,err: %v\n", err)
+		log.Errorf("get dcstorage version info from blockchain fail,err: %v", err)
 		return
 	}
 	//利用委员会gongyyòng的公钥对enclaveid进行验证
@@ -822,13 +822,13 @@ func upgradeDeal() (err error) {
 	//验证enclaveid的签名
 	ok, err := commitPubkey.Verify([]byte(programInfo.EnclaveId), []byte(programInfo.IdSignature))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "verify enclaveid signature for dcnode with last version  fail, err: %v\n", err)
-		log.Errorf("verify enclaveid signature for dcnode with last version  fail, err: %v", err)
+		fmt.Fprintf(os.Stderr, "verify enclaveid signature for dcstorage with last version  fail, err: %v\n", err)
+		log.Errorf("verify enclaveid signature for dcstorage with last version  fail, err: %v", err)
 		return
 	}
 	if !ok {
-		fmt.Fprintf(os.Stderr, "verify enclaveid signature for dcnode with last version  fail\n")
-		log.Error("verify enclaveid signature for dcnode with last version  fail")
+		fmt.Fprintf(os.Stderr, "verify enclaveid signature for dcstorage with last version  fail\n")
+		log.Error("verify enclaveid signature for dcstorage with last version  fail")
 		return
 	}
 	//比较版本号新旧，确定是否需要升级
@@ -845,14 +845,14 @@ func upgradeDeal() (err error) {
 		return
 	}
 	if !localVersion.LessThan(configedVersion) { //本地版本更新，不更新
-		fmt.Fprintf(os.Stdout, "unneed upgrade ,dcnode localVersion: %s,   configedVersion: %s\n", localVersion, configedVersion)
+		fmt.Fprintf(os.Stdout, "unneed upgrade ,dcstorage localVersion: %s,   configedVersion: %s\n", localVersion, configedVersion)
 		return
 	}
-	//拉取新版本的dcnode程序image
-	err = pullDcNodeImage(programInfo.Url)
+	//拉取新版本的dcstorage程序image
+	err = pullDcStorageNodeImage(programInfo.Url)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "pull new version dcnode image fail, err: %v\n", err)
-		log.Errorf("pull new version dcnode image fail, err: %v", err)
+		fmt.Fprintf(os.Stderr, "pull new version dcstorage image fail, err: %v\n", err)
+		log.Errorf("pull new version dcstorage image fail, err: %v", err)
 		return
 	}
 	//运行升级辅助程序
@@ -867,33 +867,33 @@ func upgradeDeal() (err error) {
 		log.Errorf("update fail,err: %v", err)
 		return
 	}
-	//关闭当前运行的dcnode
+	//关闭当前运行的dcstorage
 	err = stopDcnodeInDocker()
 	if err != nil {
 		return
 	}
-	//删除就版本的dcnode的docker容器
-	err = removeDcnodeInDocker()
+	//删除就版本的dcstoragenode的docker容器
+	err = removeDcStorageNodeInDocker()
 	if err != nil {
 		return
 	}
-	//运行下载下来的dcnode程序
-	err = startDcNode()
+	//运行下载下来的dcstorage程序
+	err = startDcStorageNode()
 	if err != nil {
 		return
 	}
 	fmt.Println("wait new version to get peer secret")
 	log.Info("wait new version to get peer secret")
-	//等待新版本的dcnode成功获取节点密钥
+	//等待新版本的dcstorage成功获取节点密钥
 	_, err = waitNewDcGetPeerSecret()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "update fail,err: %v\n", err)
 		log.Errorf("update fail,err: %v", err)
 		return
 	}
-	log.Infof("new version dcnode  get peer sceret success")
-	fmt.Println("new version dcnode  get peer sceret success")
-	//更新dcnode的image到配置文件
+	log.Infof("new version dcstorage  get peer sceret success")
+	fmt.Println("new version dcstorage  get peer sceret success")
+	//更新dcStoragenode的image到配置文件
 	config.RunningConfig.NodeImage = programInfo.Url
 	//保存配置文件
 	if err = config.SaveConfig(config.RunningConfig); err != nil {
@@ -902,29 +902,29 @@ func upgradeDeal() (err error) {
 		return
 	}
 	//通过检查version来判断新版本程序是否正常运行
-	version, enclaveId, err := getVersionByHttpGet(dcNodeListenPort)
+	version, enclaveId, err := getVersionByHttpGet(dcstorageListenPort)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "dcnode enclaveid get fail,err: %v\n", err)
-		log.Errorf("dcnode enclaveid get fail,err: %v", err)
+		fmt.Fprintf(os.Stderr, "dcstorage enclaveid get fail,err: %v\n", err)
+		log.Errorf("dcstorage enclaveid get fail,err: %v", err)
 		return
 	}
 	if version != programInfo.Version {
-		fmt.Fprintf(os.Stderr, "dcnode version check fail,version: %s, configedVersion: %s\n", version, programInfo.Version)
-		log.Errorf("dcnode version check fail,version: %s, configedVersion: %s", version, programInfo.Version)
+		fmt.Fprintf(os.Stderr, "dcstorage version check fail,version: %s, configedVersion: %s\n", version, programInfo.Version)
+		log.Errorf("dcstorage version check fail,version: %s, configedVersion: %s", version, programInfo.Version)
 		return
 	}
 	if enclaveId != programInfo.EnclaveId {
-		fmt.Fprintf(os.Stderr, "dcnode enclaveid check fail,enclaveId: %s, configedEnclaveId: %s\n", enclaveId, programInfo.EnclaveId)
-		log.Errorf("dcnode enclaveid check fail,enclaveId: %s, configedEnclaveId: %s", enclaveId, programInfo.EnclaveId)
+		fmt.Fprintf(os.Stderr, "dcstorage enclaveid check fail,enclaveId: %s, configedEnclaveId: %s\n", enclaveId, programInfo.EnclaveId)
+		log.Errorf("dcstorage enclaveid check fail,enclaveId: %s, configedEnclaveId: %s", enclaveId, programInfo.EnclaveId)
 		return
 	}
-	log.Infof("dcnode upgrade success,version: %s,enclaveid: %s", version, enclaveId)
-	fmt.Fprintf(os.Stdout, "dcnode upgrade success,version: %s,enclaveid: %s\n", version, enclaveId)
+	log.Infof("dcstorage upgrade success,version: %s,enclaveid: %s", version, enclaveId)
+	fmt.Fprintf(os.Stdout, "dcstorage upgrade success,version: %s,enclaveid: %s\n", version, enclaveId)
 	return
 }
 
 //拉取新docker image
-func pullDcNodeImage(image string) (err error) {
+func pullDcStorageNodeImage(image string) (err error) {
 	//docker pull
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -945,56 +945,56 @@ func pullDcNodeImage(image string) (err error) {
 	return
 }
 
-//删除dcnode的docker容器
-func removeDcnodeInDocker() (err error) {
-	log.Infof("begin to remove old version dcnode docker container")
-	fmt.Println("begin to remove old version dcnode docker container")
+//删除dcstoragenode的docker容器
+func removeDcStorageNodeInDocker() (err error) {
+	log.Infof("begin to remove old version dcstorage docker container")
+	fmt.Println("begin to remove old version dcstorage docker container")
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return
 	}
-	//获取dcnode的docker容器id
+	//获取dcstorage的docker容器id
 	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{All: true})
 	if err != nil {
 		return
 	}
 	for _, container := range containers {
 		if container.Image == config.RunningConfig.NodeImage {
-			log.Infof("begin to remove old version dcnode docker container,container id: %s", container.ID)
-			fmt.Printf("begin to remove old version dcnode docker container,container id: %s\n", container.ID)
+			log.Infof("begin to remove old version dcstorage docker container,container id: %s", container.ID)
+			fmt.Printf("begin to remove old version dcstorage docker container,container id: %s\n", container.ID)
 			err = cli.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{Force: true})
 			if err != nil {
 				continue
 			}
-			log.Infof("remove old version dcnode docker container success")
+			log.Infof("remove old version dcstorage docker container success")
 			return
 		} else {
-			//移除旧版本的dcnode容器
-			if strings.Contains(container.Image, "dcnode") {
-				log.Infof("begin to remove old version dcnode docker container,container id: %s", container.ID)
+			//移除旧版本的dcstorage容器
+			if strings.Contains(container.Image, "dcstorage") {
+				log.Infof("begin to remove old version dcstorage docker container,container id: %s", container.ID)
 				err = cli.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{Force: true})
 				if err != nil {
 					continue
 				}
-				log.Infof("remove old version dcnode docker container success")
+				log.Infof("remove old version dcstorage docker container success")
 				return
 			}
 			for _, name := range container.Names {
 				if name == nodeContainerName {
-					log.Infof("begin to remove old version dcnode docker container,container id: %s", container.ID)
+					log.Infof("begin to remove old version dcstorage docker container,container id: %s", container.ID)
 					err = cli.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{Force: true})
 					if err != nil {
 						continue
 					}
-					log.Infof("remove old version dcnode docker container success")
+					log.Infof("remove old version dcstorage docker container success")
 					return
 				}
 			}
 		}
 
 	}
-	log.Infof("no old version dcnode docker container")
-	fmt.Println("no old version dcnode docker container")
+	log.Infof("no old version dcstorage docker container")
+	fmt.Println("no old version dcstorage docker container")
 	return
 }
 

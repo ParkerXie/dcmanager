@@ -4,7 +4,7 @@ _dc()
 {
     local cur=${COMP_WORDS[COMP_CWORD]}
     if [ $COMP_CWORD -eq 1 ]; then
-      COMPREPLY=($(compgen -W "start stop status log uniqueid upgrade checksum get rotate-keys" -- $cur))
+      COMPREPLY=($(compgen -W "start stop status log uniqueid upgrade checksum get rotate-keys help" -- $cur))
         return 0
     fi
 
