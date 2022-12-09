@@ -12,23 +12,23 @@ _dc()
     if [ $COMP_CWORD -eq 2 ]; then
         case "$prev" in
             start)
-                COMPREPLY=($(compgen -W "node chain pccs all" -- $cur))
+                COMPREPLY=($(compgen -W "storage chain pccs all" -- $cur))
                 return 0
                 ;;
             stop)
-                COMPREPLY=($(compgen -W "node chain pccs all" -- $cur))
+                COMPREPLY=($(compgen -W "storage chain pccs all" -- $cur))
                 return 0
                 ;;
             status)
-                COMPREPLY=($(compgen -W "node chain all" -- $cur))
+                COMPREPLY=($(compgen -W "storage chain all" -- $cur))
                 return 0
                 ;;
             log)
-                COMPREPLY=($(compgen -W "node chain pccs upgrade" -- $cur))
+                COMPREPLY=($(compgen -W "storage chain pccs upgrade" -- $cur))
                 return 0
                 ;;
             uniqueid)
-                COMPREPLY=($(compgen -W "node upgrade" -- $cur))
+                COMPREPLY=($(compgen -W "storage upgrade" -- $cur))
                 return 0
                 ;; 
             upgrade)
