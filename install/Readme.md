@@ -40,7 +40,7 @@ sudo dc status
 ### Stop service
 
 ```shell
-sudo crust stop
+sudo dc stop
 ```
 
 ## License
