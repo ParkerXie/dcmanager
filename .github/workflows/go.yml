@@ -12,7 +12,7 @@ on:
 jobs:
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
     - uses: actions/checkout@v3
 
@@ -20,7 +20,8 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: 1.18
+        
     - name: Build
-      run: go build -o ./install/bin -v ./dc 
+      run: go build -v ./...
 
 
