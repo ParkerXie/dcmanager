@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/dariubs/percent"
+	sym "github.com/dcnetio/gothreads-lib/crypto/symmetric"
 	gproto "github.com/gogo/protobuf/proto"
 	ipfslite "github.com/hsanjuan/ipfs-lite"
 	"github.com/ipfs/go-cid"
@@ -26,10 +27,9 @@ import (
 	"github.com/ipfs/go-mfs"
 	ufsio "github.com/ipfs/go-unixfs/io"
 	pb "github.com/ipfs/go-unixfs/pb"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
-	sym "github.com/textileio/crypto/symmetric"
 )
 
 const dcFileHead = "$$dcfile$$"
@@ -97,7 +97,7 @@ func DownloadFromIpfs(fcid, secret, savePath string, addrInfos []peer.AddrInfo, 
 		panic(err)
 	}
 
-	lite, err := ipfslite.New(ctx, ds, h, dht, nil)
+	lite, err := ipfslite.New(ctx, ds, nil, h, dht, nil)
 	if err != nil {
 		panic(err)
 	}
