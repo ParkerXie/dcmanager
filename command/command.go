@@ -55,10 +55,10 @@ Restart=always
 [Install]
 WantedBy=default.target`
 
-//servicename
+// servicename
 const serviceConfigFile = "/etc/systemd/system/dc.service"
 
-//const serviceConfigFile = "./test/dc.service"
+// const serviceConfigFile = "./test/dc.service"
 const startupContent = "/opt/dcnetio/bin/dc upgrade daemon"
 const commitPubkeyHex = "0x3d14b9f8765c4c2e0a7b77805ebdad50ffbc74a7ee4aa606399693342a25483b" //技术委员会用于发布dcstorage升级版本的pubkey
 
@@ -108,7 +108,7 @@ func StartCommandDeal() {
 		return
 	}
 	switch os.Args[2] {
-	case "node":
+	case "storage":
 		err := startDcStorageNode()
 		if err == nil {
 			showContainerLog(nodeContainerName)
@@ -148,7 +148,7 @@ func StopCommandDeal() {
 		return
 	}
 	switch os.Args[2] {
-	case "node":
+	case "storage":
 		stopDcnodeInDocker()
 	case "chain":
 		stopDcchainInDocker()
@@ -163,7 +163,7 @@ func StopCommandDeal() {
 	}
 }
 
-//获取程序的运行状态
+// 获取程序的运行状态
 func StatusCommandDeal() {
 	if len(os.Args) < 2 {
 		ShowHelp()
@@ -176,7 +176,7 @@ func StatusCommandDeal() {
 	dcStatus, _ := checkDcDeamonStatusDc()
 	fmt.Println("daemon status:", dcStatus)
 	switch secondArgs {
-	case "node":
+	case "storage":
 		nodeStatus, _ := checkDcnodeStatus()
 		fmt.Println("dcstorage status:", nodeStatus)
 	case "chain":
@@ -192,14 +192,14 @@ func StatusCommandDeal() {
 	}
 }
 
-//打印具体程序的实时运行日志
+// 打印具体程序的实时运行日志
 func LogCommandDeal() { //
 	if len(os.Args) < 3 {
 		ShowHelp()
 		return
 	}
 	switch os.Args[2] {
-	case "node":
+	case "storage":
 		showContainerLog(nodeContainerName)
 	case "chain":
 		showContainerLog(chainContainerName)
@@ -212,7 +212,7 @@ func LogCommandDeal() { //
 	}
 }
 
-//升级指令处理
+// 升级指令处理
 func UpgradeCommandDeal() {
 	if len(os.Args) > 2 {
 		if os.Args[2] == "daemon" { //进入守护程序模式，自动下载并更新dcstorage,同时设置为开机重启
@@ -235,7 +235,7 @@ func UpgradeCommandDeal() {
 	}
 }
 
-//获取指定enclave的enclaveid
+// 获取指定enclave的enclaveid
 func UniqueIdCommandDeal() {
 	if len(os.Args) < 3 {
 		ShowHelp()
@@ -244,7 +244,7 @@ func UniqueIdCommandDeal() {
 	fmtStr := "dcupgrade version: %s,enclaveid: %s\n"
 	localport := 0
 	switch os.Args[2] {
-	case "node":
+	case "storage":
 		localport = dcstorageListenPort
 		//判断dcstorage是否在运行
 		nodeStatus, _ := checkDcnodeStatus()
@@ -272,7 +272,7 @@ func UniqueIdCommandDeal() {
 	fmt.Printf(fmtStr, version, enclaveId)
 }
 
-//生成文件的hash校验码
+// 生成文件的hash校验码
 func ChecksumCommandDeal() {
 	if len(os.Args) < 3 {
 		fmt.Println("Usage: sudo dc checksum <file>")
@@ -288,7 +288,7 @@ func ChecksumCommandDeal() {
 	}
 }
 
-//从dc网络下载文件
+// 从dc网络下载文件
 func GetFileFromIpfsCommandDeal() {
 	if len(os.Args) < 3 {
 		ShowHelp()
@@ -350,7 +350,7 @@ func RotateKeyCommandDeal() (sessionKey string, err error) {
 	return
 }
 
-//获取dcstorage的运行状态
+// 获取dcstorage的运行状态
 func checkDcnodeStatus() (status bool, err error) {
 	status = false
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -368,7 +368,7 @@ func checkDcnodeStatus() (status bool, err error) {
 	return
 }
 
-//获取dcchain的运行状态
+// 获取dcchain的运行状态
 func checkDcchainStatus() (status bool, err error) {
 	status = false
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -386,7 +386,7 @@ func checkDcchainStatus() (status bool, err error) {
 	return
 }
 
-//获取dcmanager的运行状态
+// 获取dcmanager的运行状态
 func checkDcDeamonStatusDc() (status bool, err error) {
 	// Look for the dcmanager process.
 	status = false
@@ -410,7 +410,7 @@ func checkDcDeamonStatusDc() (status bool, err error) {
 	return
 }
 
-//后台升级跟踪处理
+// 后台升级跟踪处理
 func daemonCommandDeal() {
 	_, err := os.Stat(daemonFilepath)
 	if err != nil {
@@ -475,7 +475,7 @@ func daemonCommandDeal() {
 	}
 }
 
-//退出守护程序模式
+// 退出守护程序模式
 func cancelDaemonCommandDeal() {
 	//remove startup service config
 	flag := removeServiceStartup()
@@ -538,7 +538,7 @@ func startDcChain() error {
 	return startDcchainInDocker()
 }
 
-//start dcstorage in docker
+// start dcstorage in docker
 func startDcnodeInDocker() (err error) {
 	ctx := context.Background()
 	_, err = util.CreateVolume(ctx, nodeVolueName)
@@ -601,7 +601,7 @@ func startDcnodeInDocker() (err error) {
 	return
 }
 
-//start dcchain in docker
+// start dcchain in docker
 func startDcchainInDocker() (err error) {
 	ctx := context.Background()
 	_, err = util.CreateVolume(ctx, chainVolueName)
@@ -650,7 +650,7 @@ func startDcchainInDocker() (err error) {
 
 }
 
-//start dcupgrade in docker
+// start dcupgrade in docker
 func startDcupgradeInDocker() (err error) {
 	ctx := context.Background()
 	dataMount := mount.Mount{
@@ -695,28 +695,28 @@ func startDcupgradeInDocker() (err error) {
 	return
 }
 
-//stop dcstorage in docker
+// stop dcstorage in docker
 func stopDcnodeInDocker() (err error) {
 	ctx := context.Background()
 	err = util.StopContainer(ctx, nodeContainerName)
 	return
 }
 
-//stop dcchain in docker
+// stop dcchain in docker
 func stopDcchainInDocker() {
 	ctx := context.Background()
 	util.StopContainer(ctx, chainContainerName)
 
 }
 
-//stop dcpccs in docker
+// stop dcpccs in docker
 func stopPccsInDocker() {
 	ctx := context.Background()
 	util.StopContainer(ctx, pccsContainerName)
 
 }
 
-//利用dcstorage以及dcupdate程序提供本地随机数查询服务，获取它们对应的enclavid
+// 利用dcstorage以及dcupdate程序提供本地随机数查询服务，获取它们对应的enclavid
 func getVersionByHttpGet(localport int) (version string, enclaveId string, err error) {
 	dcEnclaveIdUrl := fmt.Sprintf("http://127.0.0.1:%d/version", localport)
 	respBody, err := util.HttpGet(dcEnclaveIdUrl)
@@ -735,7 +735,7 @@ func getVersionByHttpGet(localport int) (version string, enclaveId string, err e
 
 }
 
-//升级过程，等待dcupdate从dcstorage获取节点密钥
+// 升级过程，等待dcupdate从dcstorage获取节点密钥
 func waitDcUpdateGetPeerSecret() (bool, error) {
 	dcSecretFlagUrl := fmt.Sprintf("http://127.0.0.1:%d/secretflag", dcUpgradeListenPort)
 	ticker := time.NewTicker(time.Second)
@@ -761,7 +761,7 @@ func waitDcUpdateGetPeerSecret() (bool, error) {
 
 }
 
-//升级过程，等待新版本dcstorage从dcupdate取走密钥
+// 升级过程，等待新版本dcstorage从dcupdate取走密钥
 func waitNewDcGetPeerSecret() (bool, error) {
 	dcSecretFlagUrl := fmt.Sprintf("http://127.0.0.1:%d/upgradeflag", dcUpgradeListenPort)
 	ticker := time.NewTicker(time.Second)
@@ -787,7 +787,7 @@ func waitNewDcGetPeerSecret() (bool, error) {
 
 }
 
-//dcstorage 程序升级处理
+// dcstorage 程序升级处理
 func upgradeDeal() (err error) {
 	//判断当前dcstorage是否在运行，如果没有运行，则启动dcstorage
 	startDcStorageNode()
@@ -923,7 +923,7 @@ func upgradeDeal() (err error) {
 	return
 }
 
-//拉取新docker image
+// 拉取新docker image
 func pullDcStorageNodeImage(image string) (err error) {
 	//docker pull
 	cli, err := client.NewClientWithOpts(client.FromEnv)
@@ -945,7 +945,7 @@ func pullDcStorageNodeImage(image string) (err error) {
 	return
 }
 
-//删除dcstoragenode的docker容器
+// 删除dcstoragenode的docker容器
 func removeDcStorageNodeInDocker() (err error) {
 	log.Infof("begin to remove old version dcstorage docker container")
 	fmt.Println("begin to remove old version dcstorage docker container")
@@ -998,7 +998,7 @@ func removeDcStorageNodeInDocker() (err error) {
 	return
 }
 
-//通过监听端口来判断程序是否已经运行
+// 通过监听端口来判断程序是否已经运行
 func GetPidWithListenPort(listenPort int) (pid int64, err error) {
 	cmd := fmt.Sprintf("lsof -i:%d| awk '/LISTEN/ && !/awk/ {print $2}'", listenPort)
 	//查看进程是否在运行
@@ -1014,7 +1014,7 @@ func GetPidWithListenPort(listenPort int) (pid int64, err error) {
 	return
 }
 
-//检查自启动配置是否已经存在
+// 检查自启动配置是否已经存在
 func ifStartupConfiged() bool {
 	//查询系统服务，针对当前目录的开机启动服务是否已经配置
 	_, err := os.Stat(serviceConfigFile)
@@ -1033,12 +1033,12 @@ func ifStartupConfiged() bool {
 	return v == startupContent
 }
 
-//判断开机启动是否已经配置
+// 判断开机启动是否已经配置
 func ifServiceStartupConfiged() bool {
 	return ifStartupConfiged()
 }
 
-//为服务配置开机启动
+// 为服务配置开机启动
 func configServiceStartup() bool {
 	if !ifStartupConfiged() { //服务没生成，需要进行生成操作
 		serviceFile, err := os.OpenFile(serviceConfigFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
@@ -1069,7 +1069,7 @@ func configServiceStartup() bool {
 	return ifServiceStartupConfiged()
 }
 
-//移除开机启动
+// 移除开机启动
 func removeServiceStartup() bool {
 	if !ifServiceStartupConfiged() { //原来就没有配置
 		return true
@@ -1095,7 +1095,7 @@ func removeServiceStartup() bool {
 	return true
 }
 
-//利用docker启动pccs
+// 利用docker启动pccs
 func runPccsInDocker() (err error) {
 	listenPort := 8081
 	//查询端口是否已经被占用
@@ -1149,7 +1149,7 @@ func runPccsInDocker() (err error) {
 	return
 }
 
-//show Container log
+// show Container log
 func showContainerLog(containerName string) {
 	containerId, err := findContainerIdByName(containerName)
 	if err != nil {
@@ -1163,7 +1163,7 @@ func showContainerLog(containerName string) {
 	}
 }
 
-//打印docker中指定容器ID的日志
+// 打印docker中指定容器ID的日志
 func showLogsForContainer(containerId string) (err error) {
 	cli, _ := client.NewClientWithOpts(client.FromEnv)
 	reader, err := cli.ContainerLogs(context.Background(), containerId, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true, Follow: true, Tail: "100"})
@@ -1180,7 +1180,7 @@ func showLogsForContainer(containerId string) (err error) {
 	return
 }
 
-//find container id by Name
+// find container id by Name
 func findContainerIdByName(containerName string) (containerId string, err error) {
 	cli, _ := client.NewClientWithOpts(client.FromEnv)
 	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{All: true})
@@ -1198,7 +1198,7 @@ func findContainerIdByName(containerName string) (containerId string, err error)
 	return
 }
 
-//handle interrupt signal
+// handle interrupt signal
 func handleInterruptSignal() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)

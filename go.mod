@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/ChainSafe/go-schnorrkel v1.0.0
-	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.8
+	github.com/centrifuge/go-substrate-rpc-client/v4 v4.0.9
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/dcnetio/gothreads-lib v0.0.2
 	github.com/gogo/protobuf v1.3.2
