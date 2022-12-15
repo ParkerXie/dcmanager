@@ -279,7 +279,7 @@ func PeerInfoCommandDeal() {
 		fmt.Println("get peerinfo failed,please make sure storage service is running")
 		return
 	}
-	fmt.Printf("peer ID: %s\n, peer Pubkey: %s\n, peer Wallet Address: %s\n", peerid, account, walletAddr)
+	fmt.Printf("peer ID: %s\npeer Pubkey: %s\npeer Wallet Address: %s\n", peerid, account, walletAddr)
 
 }
 
