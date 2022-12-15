@@ -276,7 +276,7 @@ func UniqueIdCommandDeal() {
 func PeerInfoCommandDeal() {
 	peerid, account, walletAddr, err := getPeerInfoByHttpGet()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "get account failed:%s", err.Error())
+		fmt.Println("get peerinfo failed,please make sure storage service is running")
 		return
 	}
 	fmt.Printf("peer ID: %s\n, peer Pubkey: %s\n, peer Wallet Address: %s\n", peerid, account, walletAddr)
