@@ -16,7 +16,7 @@ import (
 
 var log = logging.Logger("dcmanager")
 
-//节点相关程序版本信息
+// 节点相关程序版本信息
 type DcProgram struct {
 	Url         string //程序文件下载路径
 	EnclaveId   string //程序对应的tee enclaveid
@@ -25,7 +25,7 @@ type DcProgram struct {
 	Version     string //程序版本信息
 }
 
-//threaddb的log信息
+// threaddb的log信息
 type Loginfo struct {
 	Logid []byte
 	Size  uint64
@@ -43,7 +43,7 @@ type StoreunitInfo struct {
 	Logs  map[string]uint64 //utype 为2时，存放log文件信息列表
 }
 
-//区块链上文件信息存储结构
+// 区块链上文件信息存储结构
 type BlockStoreunitInfo struct {
 	//备份节点ID列表
 	Peers []string
@@ -67,7 +67,7 @@ type BlockPeerInfo struct { //节点信息
 	Ip_address    types.Bytes
 }
 
-//从区块链获取最新版本的dc节点程序的信息
+// 从区块链获取最新版本的dc节点程序的信息
 func GetConfigedDcStorageInfo() (dcProgram *DcProgram, err error) {
 	//随机选择要连接的区块链代理
 	var chainApi *gsrpc.SubstrateAPI
@@ -91,9 +91,9 @@ func GetConfigedDcStorageInfo() (dcProgram *DcProgram, err error) {
 	return
 }
 
-//获取当前区块链上的程序版本信息
+// 获取当前区块链上的程序版本信息
 func getProgramInfo(chainApi *gsrpc.SubstrateAPI, meta *types.Metadata) (*DcProgram, error) {
-	key, err := types.CreateStorageKey(meta, "DcStorage", "Program")
+	key, err := types.CreateStorageKey(meta, "DcNode", "DcProgram")
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func getProgramInfo(chainApi *gsrpc.SubstrateAPI, meta *types.Metadata) (*DcProg
 	return program, nil
 }
 
-//等待区块链同步完成
+// 等待区块链同步完成
 func waitForChainSyncCompleted(ctx context.Context, chainApi *gsrpc.SubstrateAPI, meta *types.Metadata) (err error) {
 	health, err := chainApi.RPC.System.Health()
 	if err != nil || health.IsSyncing {
@@ -138,7 +138,7 @@ func waitForChainSyncCompleted(ctx context.Context, chainApi *gsrpc.SubstrateAPI
 	return
 }
 
-//从区块链获取指定cid的存储位置信息
+// 从区块链获取指定cid的存储位置信息
 func GetPeerAddrsForCid(sCid string) (fileSize int64, peerAddrInfos []peer.AddrInfo, err error) {
 	//随机选择要连接的区块链代理
 	var chainApi *gsrpc.SubstrateAPI
@@ -162,7 +162,7 @@ func GetPeerAddrsForCid(sCid string) (fileSize int64, peerAddrInfos []peer.AddrI
 	return getPeerAddrsForCid(sCid, chainApi, meta)
 }
 
-//对象状态查询(包括文件和数据库状态)
+// 对象状态查询(包括文件和数据库状态)
 func getPeerAddrsForCid(sCid string, chainApi *gsrpc.SubstrateAPI, meta *types.Metadata) (fileSize int64, peerAddrInfos []peer.AddrInfo, err error) {
 	if chainApi == nil {
 		return 0, nil, fmt.Errorf("chain proxy not init")
@@ -195,11 +195,11 @@ func getPeerAddrsForCid(sCid string, chainApi *gsrpc.SubstrateAPI, meta *types.M
 	return
 }
 
-//获取节点地址信息
+// 获取节点地址信息
 func GetPeerAddrInfo(peerid string, chainApi *gsrpc.SubstrateAPI, meta *types.Metadata) (addrInfo peer.AddrInfo, err error) {
 	peerIdBytes, _ := codec.Encode([]byte(peerid))
 	// //根据pubkey 取出节点信息
-	key, err := types.CreateStorageKey(meta, "DcStorage", "Peers", peerIdBytes)
+	key, err := types.CreateStorageKey(meta, "DcNode", "Peers", peerIdBytes)
 	if err != nil {
 		return
 	}
