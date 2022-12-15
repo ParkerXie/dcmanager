@@ -13,7 +13,7 @@ import (
 
 var log = logging.Logger("dcmanager")
 
-//logpath := "./log"
+// logpath := "./log"
 const logpath = "/opt/dcnetio/log"
 
 func main() {
@@ -68,6 +68,8 @@ func main() {
 		command.UpgradeCommandDeal()
 	case "uniqueid":
 		command.UniqueIdCommandDeal()
+	case "peerinfo":
+		command.PeerInfoCommandDeal()
 	case "checksum":
 		command.ChecksumCommandDeal()
 	case "get":

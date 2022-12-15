@@ -114,7 +114,7 @@ func HttpPost(url string, body []byte) ([]byte, error) {
 	return body, nil
 }
 
-//获取随机非对称加解密私钥
+// 获取随机非对称加解密私钥
 func GetRandomPrivKey() (crypto.PrivKey, error) {
 	//生成助记词
 	entropy, err := bip39.NewEntropy(256)
@@ -172,7 +172,7 @@ func Sha256sum(filepath string) (checksum string, err error) {
 	return
 }
 
-//create volume
+// create volume
 func CreateVolume(ctx context.Context, volumeName string) (v *types.Volume, err error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -199,7 +199,7 @@ func CreateVolume(ctx context.Context, volumeName string) (v *types.Volume, err 
 	return
 }
 
-//start container removeOldFlag: true  if exist same name container with different image,remove the old container
+// start container removeOldFlag: true  if exist same name container with different image,remove the old container
 func StartContainer(ctx context.Context, containerName string, removeOldFlag bool, config *container.Config, hostConfig *container.HostConfig) (err error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -263,7 +263,7 @@ func StartContainer(ctx context.Context, containerName string, removeOldFlag boo
 	return
 }
 
-//stop container
+// stop container
 func StopContainer(ctx context.Context, containerName string) (err error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
@@ -295,7 +295,7 @@ func StopContainer(ctx context.Context, containerName string) (err error) {
 	return
 }
 
-//生成随机字符串
+// 生成随机字符串
 func RandStringBytes(n int) string {
 	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	b := make([]byte, n)

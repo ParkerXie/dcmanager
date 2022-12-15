@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -92,6 +91,7 @@ func ShowHelp() {
 	fmt.Println("                                         when a new dcstorage version configed on blockchain")
 	fmt.Println("                                         \"cancel\": cancel dcmanager deamon mode")
 	fmt.Println(" uniqueid  {storage|upgrade}             show soft version and sgx enclaveid ")
+	fmt.Println(" peerinfo  					          show local running peer info")
 	fmt.Println(" checksum  filepath                      generate  sha256 checksum for file in the \"filepath\"")
 	fmt.Println(" get cid [--name][--timeout][--secret]   get file from dc net with \"cid\" ")
 	fmt.Println("                                         \"--name\": file to save name")
@@ -272,6 +272,17 @@ func UniqueIdCommandDeal() {
 	fmt.Printf(fmtStr, version, enclaveId)
 }
 
+// 获取本地运行的节点信息
+func PeerInfoCommandDeal() {
+	peerid, account, walletAddr, err := getPeerInfoByHttpGet()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "get account failed:%s", err.Error())
+		return
+	}
+	fmt.Printf("peer ID: %s\n, peer Pubkey: %s\n, peer Wallet Address: %s\n", peerid, account, walletAddr)
+
+}
+
 // 生成文件的hash校验码
 func ChecksumCommandDeal() {
 	if len(os.Args) < 3 {
@@ -391,7 +402,7 @@ func checkDcDeamonStatusDc() (status bool, err error) {
 	// Look for the dcmanager process.
 	status = false
 	//read content from .dcdaemon
-	content, err := ioutil.ReadFile(daemonFilepath)
+	content, err := os.ReadFile(daemonFilepath)
 	if err != nil {
 		return
 	}
@@ -422,7 +433,7 @@ func daemonCommandDeal() {
 		}
 	}
 	//read content from .dcdaemon
-	content, err := ioutil.ReadFile(daemonFilepath)
+	content, err := os.ReadFile(daemonFilepath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "read .dcdaemon file error:%v\n", err)
 		return
@@ -430,7 +441,7 @@ func daemonCommandDeal() {
 	//check if the content is empty
 	if len(content) == 0 {
 		//write the current pid to .dcdaemon
-		err = ioutil.WriteFile(daemonFilepath, []byte(strconv.Itoa(os.Getpid())), 0644)
+		err = os.WriteFile(daemonFilepath, []byte(strconv.Itoa(os.Getpid())), 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "write .dcdaemon file error:%v\n", err)
 			return
@@ -449,7 +460,7 @@ func daemonCommandDeal() {
 			return
 		}
 		//write the current pid to .dcdaemon
-		err = ioutil.WriteFile(daemonFilepath, []byte(strconv.Itoa(os.Getpid())), 0644)
+		err = os.WriteFile(daemonFilepath, []byte(strconv.Itoa(os.Getpid())), 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "write .dcdaemon file error:%v\n", err)
 			return
@@ -493,7 +504,7 @@ func cancelDaemonCommandDeal() {
 		}
 	}
 	//read content from .dcdaemon
-	content, err := ioutil.ReadFile(daemonFilepath)
+	content, err := os.ReadFile(daemonFilepath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "read .dcdaemon file error:%v\n", err)
 		return
@@ -725,11 +736,31 @@ func getVersionByHttpGet(localport int) (version string, enclaveId string, err e
 	}
 	versionInfo := string(respBody)
 	values := strings.Split(versionInfo, "@")
-	if len(values) != 2 {
+	if len(values) < 2 {
 		fmt.Println("get invalid version info")
 	} else {
 		enclaveId = values[0]
 		version = values[1]
+	}
+	return
+
+}
+
+// 利用dcstorage程序提供本地随机数查询服务，获取节点信息
+func getPeerInfoByHttpGet() (peerid, account, walletAddr string, err error) {
+	dcPeerInfoUrl := fmt.Sprintf("http://127.0.0.1:%d/peerinfo", dcstorageListenPort)
+	respBody, err := util.HttpGet(dcPeerInfoUrl)
+	if err != nil {
+		return
+	}
+	peerInfo := string(respBody)
+	values := strings.Split(peerInfo, "@")
+	if len(values) < 3 {
+		fmt.Println("get invalid peer info")
+	} else {
+		peerid = values[0]
+		account = values[1]
+		walletAddr = values[2]
 	}
 	return
 
@@ -938,7 +969,7 @@ func pullDcStorageNodeImage(image string) (err error) {
 	}
 	defer out.Close()
 	//docker pull
-	_, err = ioutil.ReadAll(out)
+	_, err = io.ReadAll(out)
 	if err != nil {
 		return
 	}
