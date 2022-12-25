@@ -12,6 +12,7 @@ import (
 
 const Config_file_path = "/opt/dcnetio/etc/manage_config.yaml"
 const Version = "0.0.1"
+const CommitPubkeyHex = "0x3d14b9f8765c4c2e0a7b77805ebdad50ffbc74a7ee4aa606399693342a25483b" //技术委员会用于发布dcstorage升级版本的pubkey
 
 var RunningConfig = &DcManageConfig{
 	ChainNodeName:      "",
@@ -23,6 +24,7 @@ var RunningConfig = &DcManageConfig{
 	NodeImage:          "ghcr.io/dcnetio/dcstorage:latest",
 	UpgradeImage:       "ghcr.io/dcnetio/dcupgrade:latest",
 	PccsImage:          "ghcr.io/dcnetio/pccs:latest",
+	Registry:           "ghcr.io/dcnetio",
 }
 
 type DcManageConfig struct {
@@ -35,6 +37,7 @@ type DcManageConfig struct {
 	NodeImage          string `yaml:"nodeImage"`
 	UpgradeImage       string `yaml:"upgradeImage"`
 	PccsImage          string `yaml:"pccsImage"`
+	Registry           string `yaml:"registry"`
 }
 
 func ReadConfig() (*DcManageConfig, error) {

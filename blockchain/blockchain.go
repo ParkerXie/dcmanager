@@ -10,19 +10,18 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/dcnetio/dc/config"
-	logging "github.com/ipfs/go-log/v2"
+	"github.com/dcnetio/gothreads-lib/core/thread"
+	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
+	mbase "github.com/multiformats/go-multibase"
 )
-
-var log = logging.Logger("dcmanager")
 
 // 节点相关程序版本信息
 type DcProgram struct {
-	Url         string //程序文件下载路径
-	EnclaveId   string //程序对应的tee enclaveid
-	IdSignature string //委员会对程序对应的tee enclaveid的签名
-	Checksum    string //程序的md5校验值
-	Version     string //程序版本信息
+	OriginUrl string //程序下载地址
+	MirrorUrl string //程序文件下载路径镜像地址，用于节点下载程序文件时的备用下载地址
+	EnclaveId string //程序对应的tee enclaveid
+	Version   string //程序版本信息
 }
 
 // threaddb的log信息
@@ -67,8 +66,15 @@ type BlockPeerInfo struct { //节点信息
 	Ip_address    types.Bytes
 }
 
+// enclaveId 的数据结构
+type EnclaveIdInfo struct {
+	Blockheight uint32
+	EnclaveId   []byte //16进制编码后的活动技术委员会授权的enclavid
+	Signature   []byte //签名sign(EnclaveId) 的16进制表示
+}
+
 // 从区块链获取最新版本的dc节点程序的信息
-func GetConfigedDcStorageInfo() (dcProgram *DcProgram, err error) {
+func GetConfigedDcStorageInfo() (programInfo *DcProgram, err error) {
 	//随机选择要连接的区块链代理
 	var chainApi *gsrpc.SubstrateAPI
 	var meta *types.Metadata
@@ -76,42 +82,34 @@ func GetConfigedDcStorageInfo() (dcProgram *DcProgram, err error) {
 	//连接区块链
 	chainApi, err = gsrpc.NewSubstrateAPI(config.RunningConfig.ChainWsUrl)
 	if err != nil {
-		log.Errorf("Cann't connect to blockchain,err: %v", err)
+		fmt.Fprintf(os.Stderr, "Cann't connect to blockchain,err: %v", err)
 	}
 	meta, err = chainApi.RPC.State.GetMetadataLatest()
 	if err != nil {
-		log.Errorf("Cann't get meta from blockchain,err: %v", err)
+		fmt.Fprintf(os.Stderr, "Cann't get meta from blockchain,err: %v", err)
 	}
 	//等待区块链同步完成
-	log.Info("Wait for blockchain syncing complete")
 	waitForChainSyncCompleted(ctx, chainApi, meta)
-	log.Info("Blockchain syncing completed")
-	//获取当前区块链上的程序版本信息
-	dcProgram, err = getProgramInfo(chainApi, meta)
+	//获取当前区块链上的程序版本对应的信息
+	programInfo, err = getRecommendProgram(chainApi, meta)
 	return
 }
 
 // 获取当前区块链上的程序版本信息
-func getProgramInfo(chainApi *gsrpc.SubstrateAPI, meta *types.Metadata) (*DcProgram, error) {
+func getRecommendProgram(chainApi *gsrpc.SubstrateAPI, meta *types.Metadata) (programInfo *DcProgram, err error) {
 	key, err := types.CreateStorageKey(meta, "DcNode", "DcProgram")
 	if err != nil {
-		return nil, err
+		return
 	}
-	var program *DcProgram
-	ok, err := chainApi.RPC.State.GetStorageLatest(key, program)
+	ok, err := chainApi.RPC.State.GetStorageLatest(key, programInfo)
 	if err != nil { //区块链报错
-		return nil, err
+		return
 	}
 	if !ok {
 		err = fmt.Errorf("get Program fail")
-		return nil, err
+		return
 	}
-	if program == nil {
-		err = fmt.Errorf("get Program fail")
-		return nil, err
-	}
-
-	return program, nil
+	return
 }
 
 // 等待区块链同步完成
@@ -218,4 +216,64 @@ func GetPeerAddrInfo(peerid string, chainApi *gsrpc.SubstrateAPI, meta *types.Me
 	addrInfo = *pAddrInfo
 	return
 
+}
+
+// 判断encalve ID是否有效
+func IfEnclaveIdValid(ctx context.Context, enclaveId string) (validFlag bool) {
+	var chainApi *gsrpc.SubstrateAPI
+	var meta *types.Metadata
+	//连接区块链
+	chainApi, err := gsrpc.NewSubstrateAPI(config.RunningConfig.ChainWsUrl)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Cann't connect to blockchain")
+	}
+	meta, err = chainApi.RPC.State.GetMetadataLatest()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Cann't get meta from blockchain")
+	}
+	key, err := types.CreateStorageKey(meta, "DcNode", "EnclaveIds")
+	if err != nil {
+		return false
+	}
+	var enclaveIdInfos []EnclaveIdInfo //每个enclaveid的签名
+	ok, err := chainApi.RPC.State.GetStorageLatest(key, &enclaveIdInfos)
+	if err != nil { //区块链报错
+		fmt.Fprintln(os.Stderr, err.Error())
+		return false
+	}
+	if !ok {
+		fmt.Fprintln(os.Stderr, "get EnclaveIds object fail")
+		return false
+	}
+	//生成技术委员会的pubkey
+	commitPubkeyHexBytes, err := codec.HexDecodeString(config.CommitPubkeyHex)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
+		return
+	}
+	cpubkey, err := crypto.UnmarshalEd25519PublicKey(commitPubkeyHexBytes)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "client request secret fail, err: %v\n", err)
+		return
+	}
+	commitPubkey := thread.NewLibp2pPubKey(cpubkey)
+	for _, enclaveIdInfo := range enclaveIdInfos {
+		if enclaveId != string(enclaveIdInfo.EnclaveId) {
+			continue
+		}
+		_, signature, err := mbase.Decode(string(enclaveIdInfo.Signature))
+		if err != nil {
+			continue
+		}
+		enclaveId, err := codec.HexDecodeString(string(enclaveIdInfo.EnclaveId))
+		if err != nil {
+			continue
+		}
+		ok, err := commitPubkey.Verify(enclaveId, signature)
+		if err != nil || !ok {
+			continue
+		}
+		return true
+	}
+	return false
 }

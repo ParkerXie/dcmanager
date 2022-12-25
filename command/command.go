@@ -16,18 +16,15 @@ import (
 	"time"
 
 	"github.com/bigkevmcd/go-configparser"
-	"github.com/centrifuge/go-substrate-rpc-client/v4/types/codec"
 	"github.com/dcnetio/dc/blockchain"
 	"github.com/dcnetio/dc/config"
 	"github.com/dcnetio/dc/util"
-	"github.com/dcnetio/gothreads-lib/core/thread"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	goversion "github.com/hashicorp/go-version"
 	logging "github.com/ipfs/go-log/v2"
-	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/mitchellh/go-ps"
 )
 
@@ -59,7 +56,6 @@ const serviceConfigFile = "/etc/systemd/system/dc.service"
 
 // const serviceConfigFile = "./test/dc.service"
 const startupContent = "/opt/dcnetio/bin/dc upgrade daemon"
-const commitPubkeyHex = "0x3d14b9f8765c4c2e0a7b77805ebdad50ffbc74a7ee4aa606399693342a25483b" //技术委员会用于发布dcstorage升级版本的pubkey
 
 func ShowHelp() {
 	fmt.Println("dcmanager version ", config.Version)
@@ -823,45 +819,32 @@ func upgradeDeal() (err error) {
 	//判断当前dcstorage是否在运行，如果没有运行，则启动dcstorage
 	startDcStorageNode()
 	//获取当前运行的dcstorage的version与enclaveid
-	version, _, err := getVersionByHttpGet(dcstorageListenPort)
+	version, enclaveId, err := getVersionByHttpGet(dcstorageListenPort)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "dcstorage enclaveid get fail,err: %v\n", err)
 		log.Errorf("dcstorage enclaveid get fail,err: %v", err)
 		return
 	}
-	//获取区块链上配置的最新的version与enclaveid
+	//获取区块链上最新配置的节点enclaveid
 	programInfo, err := blockchain.GetConfigedDcStorageInfo()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "get dcstorage version info from blockchain fail,err: %v\n", err)
 		log.Errorf("get dcstorage version info from blockchain fail,err: %v", err)
 		return
 	}
-	//利用委员会gongyyòng的公钥对enclaveid进行验证
-	//生成技术委员会的pubkey
-	commitPubkeyHexBytes, err := codec.HexDecodeString(commitPubkeyHex)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
+	//判断当前运行的dcstorage的enclaveid是否与区块链上最新配置的节点enclaveid一致
+	if enclaveId == programInfo.EnclaveId {
+		fmt.Println("dcstorage is the latest version")
 		return
 	}
-	cpubkey, err := crypto.UnmarshalEd25519PublicKey(commitPubkeyHexBytes)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "client request secret fail, err: %v\n", err)
-		log.Errorf("client request secret fail, err: %v\n", err)
+
+	//对获取的链上配置的enclaveid进行验证
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if !blockchain.IfEnclaveIdValid(ctx, programInfo.EnclaveId) {
 		return
 	}
-	commitPubkey := thread.NewLibp2pPubKey(cpubkey)
-	//验证enclaveid的签名
-	ok, err := commitPubkey.Verify([]byte(programInfo.EnclaveId), []byte(programInfo.IdSignature))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "verify enclaveid signature for dcstorage with last version  fail, err: %v\n", err)
-		log.Errorf("verify enclaveid signature for dcstorage with last version  fail, err: %v", err)
-		return
-	}
-	if !ok {
-		fmt.Fprintf(os.Stderr, "verify enclaveid signature for dcstorage with last version  fail\n")
-		log.Error("verify enclaveid signature for dcstorage with last version  fail")
-		return
-	}
+
 	//比较版本号新旧，确定是否需要升级
 	localVersion, err := goversion.NewVersion(version)
 	if err != nil {
@@ -879,12 +862,25 @@ func upgradeDeal() (err error) {
 		fmt.Fprintf(os.Stdout, "unneed upgrade ,dcstorage localVersion: %s,   configedVersion: %s\n", localVersion, configedVersion)
 		return
 	}
+	//根据配置文件中对应的registry地址，获取对应的镜像
+	tagUrl := programInfo.OriginUrl
+	if config.RunningConfig.Registry == "cn" {
+		tagUrl = programInfo.MirrorUrl
+	}
 	//拉取新版本的dcstorage程序image
-	err = pullDcStorageNodeImage(programInfo.Url)
+	err = pullDcStorageNodeImage(tagUrl)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "pull new version dcstorage image fail, err: %v\n", err)
-		log.Errorf("pull new version dcstorage image fail, err: %v", err)
-		return
+		if config.RunningConfig.Registry == "cn" {
+			tagUrl = programInfo.OriginUrl
+		} else {
+			tagUrl = programInfo.MirrorUrl
+		}
+		err = pullDcStorageNodeImage(tagUrl)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "pullDcStorageNodeImage fail,err: %v\n", err)
+			log.Errorf("pullDcStorageNodeImage fail,err: %v", err)
+			return
+		}
 	}
 	//运行升级辅助程序
 	err = startDcupgradeInDocker()
@@ -925,7 +921,7 @@ func upgradeDeal() (err error) {
 	log.Infof("new version dcstorage  get peer sceret success")
 	fmt.Println("new version dcstorage  get peer sceret success")
 	//更新dcStoragenode的image到配置文件
-	config.RunningConfig.NodeImage = programInfo.Url
+	config.RunningConfig.NodeImage = tagUrl
 	//保存配置文件
 	if err = config.SaveConfig(config.RunningConfig); err != nil {
 		fmt.Fprintf(os.Stderr, "save config fail,err: %v\n", err)
@@ -933,7 +929,7 @@ func upgradeDeal() (err error) {
 		return
 	}
 	//通过检查version来判断新版本程序是否正常运行
-	version, enclaveId, err := getVersionByHttpGet(dcstorageListenPort)
+	version, enclaveId, err = getVersionByHttpGet(dcstorageListenPort)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "dcstorage enclaveid get fail,err: %v\n", err)
 		log.Errorf("dcstorage enclaveid get fail,err: %v", err)
@@ -947,6 +943,8 @@ func upgradeDeal() (err error) {
 	if enclaveId != programInfo.EnclaveId {
 		fmt.Fprintf(os.Stderr, "dcstorage enclaveid check fail,enclaveId: %s, configedEnclaveId: %s\n", enclaveId, programInfo.EnclaveId)
 		log.Errorf("dcstorage enclaveid check fail,enclaveId: %s, configedEnclaveId: %s", enclaveId, programInfo.EnclaveId)
+		//停止新版本的dcstorage
+		stopDcnodeInDocker()
 		return
 	}
 	log.Infof("dcstorage upgrade success,version: %s,enclaveid: %s", version, enclaveId)
@@ -1132,8 +1130,8 @@ func runPccsInDocker() (err error) {
 	//查询端口是否已经被占用
 	pid, err := GetPidWithListenPort(listenPort)
 	if err == nil && pid > 0 { //端口已经启用，请求数据进行测试
-		_, gerr := util.HttpGet("https://localhost:8081/sgx/certification/v3/rootcacrl")
-		if gerr != nil {
+		_, err = util.HttpGetWithoutCheckCert("https://localhost:8081/sgx/certification/v3/rootcacrl")
+		if err != nil {
 			log.Errorf("Can't start pccs for 8081 port is occupied")
 		}
 		return

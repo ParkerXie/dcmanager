@@ -191,6 +191,7 @@ require (
 	github.com/ipld/go-ipld-prime v0.19.0 // indirect
 	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/libp2p/go-libp2p-asn-util v0.2.0 // indirect
+	github.com/libp2p/go-libp2p-core v0.20.1
 	github.com/libp2p/go-libp2p-kad-dht v0.19.0 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	go.uber.org/zap v1.24.0 // indirect

@@ -73,7 +73,13 @@ if [ ! -d $disksdir ]; then
 fi
 sudo cp -rf $localbindir/* $installbindir
 sudo cp -rf $localbasedir/etc/* $installetcdir
-
+#set image registry
+if [ $region  = "cn" ]; then
+    sudo sed -i "s/registry:.*/registry: cn" $installetcdir/manage_config.yaml
+else
+    sudo sed -i "s/registry:.*/registry: en" $installetcdir/manage_config.yaml
+fi
+   
 sudo chmod +x $installbindir/*
 sudo ln -s $installbindir/dc   /usr/bin/dc
 
