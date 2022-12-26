@@ -459,7 +459,7 @@ func daemonCommandDeal() {
 		return
 	}
 	//start upgrade
-	ticker := time.NewTicker(time.Hour)
+	ticker := time.NewTicker(time.Minute * 5)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	for {
