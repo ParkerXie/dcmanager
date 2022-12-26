@@ -25,7 +25,7 @@ jobs:
       run: go build -v ./...
       
     - name: Deployment test
-      run: ./install/install.sh
+      run: sudo ./install/install.sh
 
 
 
