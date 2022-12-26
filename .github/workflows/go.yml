@@ -23,5 +23,9 @@ jobs:
         
     - name: Build
       run: go build -v ./...
+      
+    - name: Deployment test
+      run: ./install/install.sh
+
 
 
