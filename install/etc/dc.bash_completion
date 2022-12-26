@@ -4,7 +4,7 @@ _dc()
 {
     local cur=${COMP_WORDS[COMP_CWORD]}
     if [ $COMP_CWORD -eq 1 ]; then
-      COMPREPLY=($(compgen -W "start stop status log uniqueid peerinfo upgrade checksum get rotate-keys help" -- $cur))
+      COMPREPLY=($(compgen -W "start stop status log uniqueid peerinfo  checksum get rotate-keys help" -- $cur))
         return 0
     fi
 
@@ -29,10 +29,6 @@ _dc()
                 ;;
             uniqueid)
                 COMPREPLY=($(compgen -W "storage upgrade" -- $cur))
-                return 0
-                ;; 
-            upgrade)
-                COMPREPLY=($(compgen -W "daemon cancel" -- $cur))
                 return 0
                 ;; 
         esac

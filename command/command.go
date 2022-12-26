@@ -28,7 +28,7 @@ import (
 	"github.com/mitchellh/go-ps"
 )
 
-const dcstorageListenPort = 6667
+const dcStorageListenPort = 6667
 const dcUpgradeListenPort = 6666
 
 const nodeContainerName = "dcstorage"
@@ -81,12 +81,7 @@ func ShowHelp() {
 	fmt.Println("                                         \"chain\":  show dcchain container running log")
 	fmt.Println("                                         \"upgrade\":  show dcupgrade container running log")
 	fmt.Println("                                         \"pccs\":  show local pccs  running log")
-	fmt.Println(" upgrade [options]                       upgrade dcstorage to newest version that configed on blockchain")
-	fmt.Println("                                         \"options\": \"daemon\"|\"cancel\"")
-	fmt.Println("                                         \"daemon\": dcmanager will run in deamon mode,and auto updrage dcstorage ")
-	fmt.Println("                                         when a new dcstorage version configed on blockchain")
-	fmt.Println("                                         \"cancel\": cancel dcmanager deamon mode")
-	fmt.Println(" uniqueid  {storage|upgrade}             show soft version and sgx enclaveid ")
+	fmt.Println(" uniqueid                                show soft version and sgx enclaveid ")
 	fmt.Println(" peerinfo  					          show local running peer info")
 	fmt.Println(" checksum  filepath                      generate  sha256 checksum for file in the \"filepath\"")
 	fmt.Println(" get cid [--name][--timeout][--secret]   get file from dc net with \"cid\" ")
@@ -226,8 +221,6 @@ func UpgradeCommandDeal() {
 		} else {
 			ShowHelp()
 		}
-	} else { //手动升级模式
-		upgradeDeal()
 	}
 }
 
@@ -237,35 +230,33 @@ func UniqueIdCommandDeal() {
 		ShowHelp()
 		return
 	}
-	fmtStr := "dcupgrade version: %s,enclaveid: %s\n"
-	localport := 0
-	switch os.Args[2] {
-	case "storage":
-		localport = dcstorageListenPort
-		//判断dcstorage是否在运行
-		nodeStatus, _ := checkDcnodeStatus()
-		if !nodeStatus {
-			fmt.Fprintf(os.Stderr, "dcstorage does not run,please start dcstorage first\n")
+	fmtStr := "dcstorage version: %s,enclaveid: %s\ndcupgrade version: %s,enclaveid: %s\n"
+	upgradeVersion := ""
+	upgradeEnclaveId := ""
+	//获取dcupgrade的版本及enclaveid信息
+	//判断dcupgrade是否在运行
+	upgradeStatus, _ := checkDcDeamonStatusDc()
+	if upgradeStatus {
+		var err error
+		upgradeVersion, upgradeEnclaveId, err = getVersionByHttpGet(dcUpgradeListenPort)
+		if err != nil {
+			log.Error(err)
 		}
-		fmtStr = "dcstorage version: %s,enclaveid: %s\n"
-	case "upgrade":
-		localport = dcUpgradeListenPort
-		//判断dcupgrade是否在运行
-		upgradeStatus, _ := checkDcDeamonStatusDc()
-		if !upgradeStatus {
-			fmt.Fprintf(os.Stderr, "dcupgrade does not run,please start dcupgrade first\n")
+	}
+	storageVersion := ""
+	storageEnclaveId := ""
+	//获取dcstorage的版本及enclaveid信息
+	//判断dcstorage是否在运行
+	nodeStatus, _ := checkDcnodeStatus()
+	if nodeStatus {
+		var err error
+		storageVersion, storageEnclaveId, err = getVersionByHttpGet(dcStorageListenPort)
+		if err != nil {
+			log.Error(err)
 		}
-		fmtStr = "dcupgrade version: %s,enclaveid: %s\n"
-	default:
-		ShowHelp()
-		return
 	}
-	version, enclaveId, err := getVersionByHttpGet(localport)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "get version failed:%s", err.Error())
-		return
-	}
-	fmt.Printf(fmtStr, version, enclaveId)
+	fmt.Println("dcmanager version ", config.Version)
+	fmt.Printf(fmtStr, storageVersion, storageEnclaveId, upgradeVersion, upgradeEnclaveId)
 }
 
 // 获取本地运行的节点信息
@@ -536,8 +527,11 @@ func startDcStorageNode() (err error) {
 	if err != nil {
 		return
 	}
-	//判断dcstorage是否已经运行，没有运行，需要先运行
+	//判断dcstorage是否已经运行，没有运行，需要运行
 	err = startDcnodeInDocker()
+	//启动后台升级服务
+	cmd := exec.Command(os.Args[0], "upgrade", "daemon")
+	cmd.Start() // 开始执行新进程，不等待新进程退出
 	return
 }
 
@@ -705,6 +699,8 @@ func startDcupgradeInDocker() (err error) {
 // stop dcstorage in docker
 func stopDcnodeInDocker() (err error) {
 	ctx := context.Background()
+	//关闭后台升级服务
+	cancelDaemonCommandDeal()
 	err = util.StopContainer(ctx, nodeContainerName)
 	return
 }
@@ -744,7 +740,7 @@ func getVersionByHttpGet(localport int) (version string, enclaveId string, err e
 
 // 利用dcstorage程序提供本地随机数查询服务，获取节点信息
 func getPeerInfoByHttpGet() (peerid, account, walletAddr string, err error) {
-	dcPeerInfoUrl := fmt.Sprintf("http://127.0.0.1:%d/peerinfo", dcstorageListenPort)
+	dcPeerInfoUrl := fmt.Sprintf("http://127.0.0.1:%d/peerinfo", dcStorageListenPort)
 	respBody, err := util.HttpGet(dcPeerInfoUrl)
 	if err != nil {
 		return
@@ -819,7 +815,7 @@ func upgradeDeal() (err error) {
 	//判断当前dcstorage是否在运行，如果没有运行，则启动dcstorage
 	startDcStorageNode()
 	//获取当前运行的dcstorage的version与enclaveid
-	version, enclaveId, err := getVersionByHttpGet(dcstorageListenPort)
+	version, enclaveId, err := getVersionByHttpGet(dcStorageListenPort)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "dcstorage enclaveid get fail,err: %v\n", err)
 		log.Errorf("dcstorage enclaveid get fail,err: %v", err)
@@ -929,7 +925,7 @@ func upgradeDeal() (err error) {
 		return
 	}
 	//通过检查version来判断新版本程序是否正常运行
-	version, enclaveId, err = getVersionByHttpGet(dcstorageListenPort)
+	version, enclaveId, err = getVersionByHttpGet(dcStorageListenPort)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "dcstorage enclaveid get fail,err: %v\n", err)
 		log.Errorf("dcstorage enclaveid get fail,err: %v", err)

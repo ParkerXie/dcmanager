@@ -61,7 +61,7 @@ require (
 	github.com/mattn/go-pointer v0.0.1 // indirect
 	github.com/moby/term v0.0.0-20220808134915-39b0c02b01ae // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/multiformats/go-multibase v0.1.1 // indirect
+	github.com/multiformats/go-multibase v0.1.1 
 	github.com/multiformats/go-multihash v0.2.1 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/onsi/ginkgo/v2 v2.5.1 // indirect
@@ -191,7 +191,6 @@ require (
 	github.com/ipld/go-ipld-prime v0.19.0 // indirect
 	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/libp2p/go-libp2p-asn-util v0.2.0 // indirect
-	github.com/libp2p/go-libp2p-core v0.20.1
 	github.com/libp2p/go-libp2p-kad-dht v0.19.0 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	go.uber.org/zap v1.24.0 // indirect

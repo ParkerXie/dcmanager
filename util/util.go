@@ -143,7 +143,7 @@ func GetRandomPrivKey() (crypto.PrivKey, error) {
 func SetupDefaultLoggingConfig(file string) error {
 	c := logging.Config{
 		Format: logging.ColorizedOutput,
-		Stderr: true,
+		Stderr: false,
 		Level:  logging.LevelInfo,
 	}
 	if file != "" {
